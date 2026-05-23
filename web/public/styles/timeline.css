@@ -245,16 +245,27 @@
 .timeline-export-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 2px 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 .timeline-export-row .inline-select {
-  min-width: 110px;
+  min-width: 0;
+  flex: 1 1 0;
+  max-width: 130px;
+}
+.timeline-export-row .mini-button {
+  flex-shrink: 0;
 }
 .timeline-export-row .export-status {
   font-size: 12px;
   opacity: 0.7;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .link-highlight-chip {

@@ -63,6 +63,7 @@ export const els = {
   todoPanel: $("todoPanel"),
   sidebarPanelToggles: [...document.querySelectorAll("[data-sidebar-panel-toggle]")],
   progressStatus: $("progressStatus"),
+  progressStatusLabel: document.querySelector?.("#progressStatus .status-label") || null,
   runMetrics: $("runMetrics"),
   composer: $("composer"),
   promptInput: $("promptInput"),

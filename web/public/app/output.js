@@ -85,8 +85,10 @@ export function renderTimeline() {
 
 export function renderRunState() {
   const status = View.formatProgressStatus(state.progress, state.replaying);
-  els.progressStatus.textContent = status;
+  if (els.progressStatusLabel) els.progressStatusLabel.textContent = status;
+  else els.progressStatus.textContent = status;
   els.progressStatus.dataset.status = status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  els.progressStatus.title = status;
   els.runMetrics.innerHTML = View.renderMetricsHTML(state.events, state.progress, state.requestMetrics);
   const submitButton = els.composer?.querySelector('button[type="submit"]');
   if (submitButton) {

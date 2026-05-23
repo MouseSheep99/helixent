@@ -73,7 +73,9 @@ export function showNotice(message, options = {}) {
 
 export function flashStatus(message) {
   if (!els.progressStatus) return;
-  els.progressStatus.textContent = message;
+  if (els.progressStatusLabel) els.progressStatusLabel.textContent = message;
+  else els.progressStatus.textContent = message;
+  els.progressStatus.title = message;
   els.progressStatus.classList.add("status-flash");
   setTimeout(() => {
     els.progressStatus.classList.remove("status-flash");

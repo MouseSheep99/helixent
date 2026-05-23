@@ -7,36 +7,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css?v=trace-lens-workbench-71" />
+    <link rel="stylesheet" href="/assets/styles.css?v=trace-lens-workbench-73" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
-        <div class="brand-cluster">
-          <div class="brand">
-            <div class="brand-mark" aria-hidden="true">
-              <span class="brand-mark-core">H</span>
-              <span class="brand-mark-orbit"></span>
-            </div>
-            <div>
-              <div class="brand-title">Helixent Trace Lens</div>
-              <div class="brand-subtitle">AI coding agent control room</div>
-            </div>
+        <div class="brand" title="Helixent Trace Lens · AI coding agent control room">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="brand-mark-core">H</span>
           </div>
-          <div class="session-summary-card">
-            <span class="session-summary-label">Session</span>
-            <span class="session-summary-value" id="sessionMeta">No session</span>
-          </div>
+          <span class="brand-name">Helixent</span>
+        </div>
+        <div class="topbar-divider" aria-hidden="true"></div>
+        <div class="topbar-meta-inline" id="sessionInline" title="No session">
+          <span class="meta-icon" aria-hidden="true">◐</span>
+          <span class="meta-value" id="sessionMeta">No session</span>
+        </div>
+        <div class="topbar-meta-inline" id="workspaceInline" title="—">
+          <span class="meta-icon" aria-hidden="true">⌗</span>
+          <span class="meta-value" id="workspaceCwd">—</span>
         </div>
         <div class="topbar-spacer"></div>
-        <div class="topbar-meta">
-          <div class="path-chip">
-            <span class="path-chip-label">Workspace</span>
-            <span class="path-chip-value" id="workspaceCwd">—</span>
-          </div>
-          <div class="status-pill live-status" id="progressStatus">Idle</div>
-          <button id="openConfig" class="ghost-button mini-button topbar-action" type="button">Model settings</button>
+        <div class="status-indicator" id="progressStatus" data-status="idle" title="Idle">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="status-label">Idle</span>
         </div>
+        <button id="openConfig" class="icon-action-button" type="button" aria-label="Model settings" title="Model settings">
+          <span class="icon-gear" aria-hidden="true"></span>
+        </button>
       </header>
 
       <div class="workspace">
@@ -167,14 +165,14 @@
             </div>
             <div class="timeline-export-row">
               <select id="timelineExportRange" class="inline-select" title="Timeline export range">
-                <option value="last-1">Last 1 run</option>
-                <option value="last-3">Last 3 runs</option>
-                <option value="full">Full session</option>
+                <option value="last-1">Last 1</option>
+                <option value="last-3">Last 3</option>
+                <option value="full">Full</option>
               </select>
               <select id="timelineExportFormat" class="inline-select" title="Timeline export format">
-                <option value="markdown">Markdown (tree)</option>
-                <option value="csv">CSV (flat)</option>
-                <option value="jsonl">Raw JSONL</option>
+                <option value="markdown">Markdown</option>
+                <option value="csv">CSV</option>
+                <option value="jsonl">JSONL</option>
               </select>
               <button id="copyTimeline" class="ghost-button mini-button" type="button">Copy</button>
               <button id="exportTimeline" class="ghost-button mini-button" type="button">Export</button>
@@ -294,6 +292,6 @@
       <div class="image-lightbox-meta"></div>
     </dialog>
 
-    <script type="module" src="/assets/app.js?v=trace-lens-workbench-71"></script>
+    <script type="module" src="/assets/app.js?v=trace-lens-workbench-73"></script>
   </body>
 </html>

@@ -17,6 +17,21 @@ const ACCEPTED_IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "i
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGES_PER_MESSAGE = 4;
 
+export function formatCwdShort(cwd) {
+  if (!cwd) return "—";
+  const parts = cwd.split("/").filter(Boolean);
+  if (parts.length === 0) return cwd;
+  const tail = parts[parts.length - 1];
+  return parts.length > 1 ? `…/${tail}` : tail;
+}
+
+export function setTopbarTitles(model, cwd) {
+  const sessionInline = document.getElementById("sessionInline");
+  const workspaceInline = document.getElementById("workspaceInline");
+  if (sessionInline) sessionInline.title = model || "No session";
+  if (workspaceInline) workspaceInline.title = cwd || "—";
+}
+
 export async function init() {
   restoreSidebarState();
   restoreTimelineState();
@@ -270,8 +285,9 @@ export function applySessionSnapshot(session, { connect = false } = {}) {
   state.pendingQuestion = null;
   state.replaying = false;
   state.currentTraceId = session.sessionId;
-  els.sessionMeta.textContent = `${session.model} · ${session.cwd}`;
-  els.workspaceCwd.textContent = session.cwd || "—";
+  els.sessionMeta.textContent = session.model;
+  els.workspaceCwd.textContent = formatCwdShort(session.cwd);
+  setTopbarTitles(session.model, session.cwd);
   renderTools();
   renderCommands();
   renderRequest();
@@ -294,7 +310,10 @@ export function connectEvents(sessionId) {
     });
   }
   source.onerror = () => {
-    els.progressStatus.textContent = "SSE reconnecting";
+    if (els.progressStatusLabel) els.progressStatusLabel.textContent = "SSE reconnecting";
+    else els.progressStatus.textContent = "SSE reconnecting";
+    els.progressStatus.dataset.status = "sse-reconnecting";
+    els.progressStatus.title = "SSE reconnecting";
   };
 }
 

@@ -58,18 +58,13 @@
     grid-template-columns: 1fr;
   }
 
+  .topbar-meta-inline {
+    max-width: 200px;
+  }
+
 }
 
 @media (max-width: 920px) {
-  .topbar {
-    flex-wrap: wrap;
-  }
-
-  .brand-cluster,
-  .topbar-meta {
-    width: 100%;
-  }
-
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -82,9 +77,16 @@
     display: none;
   }
 
-  .path-chip,
-  .session-summary-card {
-    min-width: 0;
+  .brand-name {
+    display: none;
+  }
+
+  #workspaceInline {
+    display: none;
+  }
+
+  #sessionInline {
+    max-width: 160px;
   }
 
   .prompt-tool-grid,

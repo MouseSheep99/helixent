@@ -4,6 +4,7 @@ import * as View from "../view.js";
 import { api } from "./api.js";
 import { renderRequest } from "./prompt.js";
 import { renderOutput, renderTimeline, renderRunState, renderTodoPanel } from "./output.js";
+import { formatCwdShort, setTopbarTitles } from "./session.js";
 
 export async function loadTraces() {
   const result = await api("/api/traces");
@@ -56,8 +57,9 @@ export async function deleteTrace(traceId) {
     state.todos = [];
     state.pendingApproval = null;
     state.pendingQuestion = null;
-    els.sessionMeta.textContent = state.session ? `${state.session.model} · ${state.session.cwd}` : "No session";
-    els.workspaceCwd.textContent = state.session?.cwd || "—";
+    els.sessionMeta.textContent = state.session ? state.session.model : "No session";
+    els.workspaceCwd.textContent = formatCwdShort(state.session?.cwd);
+    setTopbarTitles(state.session?.model, state.session?.cwd);
     renderRequest();
     renderOutput();
     renderTimeline();

@@ -44,9 +44,23 @@ describe("Trace Lens frontend smoke", () => {
     expect(html).not.toContain('class="ghost-button icon-button sidebar-toggle"');
     // panel-heading 含 chevron（R5）
     expect(html).toContain('class="panel-chevron"');
-    // cache busting（D9）
-    expect(html).toContain("v=trace-lens-workbench-71");
-    expect(html).not.toContain("v=trace-lens-workbench-70");
+    // 新版 topbar 结构：紧凑品牌、inline meta、status-indicator、icon-action-button
+    expect(html).toContain('class="brand"');
+    expect(html).toContain('class="brand-name"');
+    expect(html).not.toContain('class="brand-cluster"');
+    expect(html).not.toContain('class="brand-title"');
+    expect(html).not.toContain('class="brand-subtitle"');
+    expect(html).not.toContain('class="session-summary-card"');
+    expect(html).not.toContain('class="path-chip"');
+    expect(html).toContain('id="sessionInline"');
+    expect(html).toContain('id="workspaceInline"');
+    expect(html).toContain('class="status-indicator"');
+    expect(html).toContain('class="status-dot"');
+    expect(html).toContain('class="icon-action-button"');
+    expect(html).toContain('class="icon-gear"');
+    // cache busting bumped to 73
+    expect(html).toContain("v=trace-lens-workbench-73");
+    expect(html).not.toContain("v=trace-lens-workbench-72");
   });
 
   test("reconstructs request navigation, model output, tools, skills, and timeline from a trace replay", () => {
