@@ -2,19 +2,59 @@
 import { state, els } from "./state.js";
 import * as TraceExport from "../export.js";
 
+export async function copyTextWithFallback(text) {
+  if (
+    typeof document !== "undefined"
+    && document.hasFocus?.()
+    && navigator.clipboard?.writeText
+  ) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return { ok: true, via: "clipboard" };
+    } catch {
+      /* fall through */
+    }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    Object.assign(ta.style, { position: "fixed", top: "-9999px", opacity: "0" });
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand?.("copy") === true;
+    ta.remove();
+    if (ok) return { ok: true, via: "execCommand" };
+  } catch {
+    /* fall through */
+  }
+  return { ok: false };
+}
+
+const statusTokens = new WeakMap();
+export function setStatusOn(el, message) {
+  if (!el) return;
+  const token = (statusTokens.get(el) || 0) + 1;
+  statusTokens.set(el, token);
+  el.textContent = message;
+  window.setTimeout(() => {
+    if (statusTokens.get(el) === token) el.textContent = "";
+  }, 2500);
+}
+
 export async function copyTraceExport() {
   const text = buildSelectedTraceExport();
   if (!text.trim()) {
-    setExportStatus("Nothing to copy");
+    setStatusOn(els.exportStatus, "Nothing to copy");
     return;
   }
-  try {
-    await navigator.clipboard.writeText(text);
-    setExportStatus("Copied");
-  } catch {
-    downloadText(text, exportFileName());
-    setExportStatus("Clipboard blocked, downloaded");
+  const r = await copyTextWithFallback(text);
+  if (r.ok) {
+    setStatusOn(els.exportStatus, "Copied");
+    return;
   }
+  downloadText(text, exportFileName());
+  setStatusOn(els.exportStatus, "Clipboard blocked, downloaded");
 }
 
 export function downloadTraceExport() {
@@ -22,7 +62,7 @@ export function downloadTraceExport() {
   const text = buildSelectedTraceExport();
   const extension = range === "raw" ? "jsonl" : "md";
   downloadText(text, exportFileName(extension));
-  setExportStatus("Exported");
+  setStatusOn(els.exportStatus, "Exported");
 }
 
 export function buildSelectedTraceExport() {
@@ -50,8 +90,5 @@ export function downloadText(text, fileName) {
 }
 
 export function setExportStatus(message) {
-  els.exportStatus.textContent = message;
-  window.setTimeout(() => {
-    if (els.exportStatus.textContent === message) els.exportStatus.textContent = "";
-  }, 2500);
+  setStatusOn(els.exportStatus, message);
 }

@@ -10,6 +10,7 @@ export function renderTimelineHTML(events = [], filter = "all") {
 }
 
 const TIMELINE_PHASE_ORDER = [
+  "user_input",
   "prompt_phase",
   "skills",
   "memory",
@@ -24,6 +25,7 @@ const TIMELINE_PHASE_ORDER = [
 ];
 
 const TIMELINE_PHASE_TITLES = {
+  user_input: "User Input",
   prompt_phase: "Prompt",
   skills: "Skills",
   memory: "Memory",
@@ -89,6 +91,7 @@ export function buildTimelineGraph(events = []) {
 function createTimelineSessionNode() {
   return {
     id: "session",
+    nodeId: "session",
     type: "session",
     title: "Workspace / Session Events",
     status: "success",
@@ -100,8 +103,10 @@ function createTimelineSessionNode() {
 function getOrCreateTimelineRun(graph, runs, event) {
   const requestId = event.requestId || `synthetic-${runs.size + 1}`;
   if (runs.has(requestId)) return runs.get(requestId);
+  const nodeId = `run:${requestId}`;
   const run = {
-    id: `run:${requestId}`,
+    id: nodeId,
+    nodeId,
     type: "run",
     requestId,
     runIndex: runs.size + 1,
@@ -124,8 +129,11 @@ function getOrCreateTimelineAgentExecution(graph, run, event) {
   const agentId = String(refs.agentId || event.data?.agentId || "lead");
   const agentRole = refs.agentRole || event.data?.agentRole || (agentId === "lead" ? "lead" : "sub");
   if (run.agentExecutions.has(agentId)) return run.agentExecutions.get(agentId);
+  const nodeId = `agent:${run.requestId || run.runIndex}:${agentId}`;
   const agent = {
-    id: `agent:${run.requestId || run.runIndex}:${agentId}`,
+    id: nodeId,
+    nodeId,
+    scopeId: run.nodeId,
     type: "agent_execution",
     requestId: run.requestId,
     agentId,
@@ -154,8 +162,11 @@ function getOrCreateTimelineStep(graph, agent, event) {
     if (isBeforeAgentStepEvent(event)) agent.currentStep = stepNumber;
     return existing;
   }
+  const nodeId = `step:${agent.requestId || "session"}:${agent.agentId}:${stepNumber}`;
   const step = {
-    id: `step:${agent.requestId || "session"}:${agent.agentId}:${stepNumber}`,
+    id: nodeId,
+    nodeId,
+    scopeId: agent.scopeId,
     type: "react_step",
     requestId: agent.requestId,
     agentId: agent.agentId,
@@ -178,8 +189,11 @@ function getOrCreateTimelineStep(graph, agent, event) {
 function getOrCreateTimelinePhase(graph, step, phaseType) {
   const type = TIMELINE_PHASE_ORDER.includes(phaseType) ? phaseType : "unscoped";
   if (step.phases.has(type)) return step.phases.get(type);
+  const nodeId = `phase:${step.requestId || "session"}:${step.agentId}:${step.step}:${type}`;
   const phase = {
     id: `phase:${step.id}:${type}`,
+    nodeId,
+    scopeId: step.nodeId,
     type,
     title: TIMELINE_PHASE_TITLES[type] || friendlyTimelineKind(type),
     status: "success",
@@ -196,8 +210,21 @@ function getOrCreateTimelinePhase(graph, step, phaseType) {
 }
 
 function createTimelineEventNode(event) {
+  const eventId = event.id || `${event.kind}:${event.at || Math.random()}`;
+  const eventNodeId = event.kind === "error" ? `error:${eventId}` : `event:${eventId}`;
+  const toolUseId = event.data?.toolUseId
+    || event.data?.toolUse?.id
+    || event.data?.tool_use_id
+    || event.data?.id;
+  // For tool events, share the same nodeId namespace as agent-output (tool:<toolUseId>)
+  // so click-on-tool in either pane lights up the matching node.
+  const sharedToolId = ["tool_call_detected", "tool_execution_started", "tool_execution_completed", "tool_disabled"].includes(event.kind)
+    && toolUseId
+    ? `tool:${toolUseId}`
+    : null;
   return {
-    id: `event:${event.id || `${event.kind}:${event.at || Math.random()}`}`,
+    id: `event:${eventId}`,
+    nodeId: sharedToolId || eventNodeId,
     type: "event",
     kind: event.kind,
     category: classifyTimelineEvent(event),
@@ -212,6 +239,12 @@ function createTimelineEventNode(event) {
 }
 
 function appendTimelineChild(graph, parent, child) {
+  if (child && child.scopeId === undefined) {
+    // Inherit closest non-event scope so events under a phase share the step nodeId.
+    if (parent?.type === "react_step") child.scopeId = parent.nodeId;
+    else if (parent?.scopeId !== undefined) child.scopeId = parent.scopeId;
+    else if (parent?.nodeId) child.scopeId = parent.nodeId;
+  }
   parent.children.push(child);
   graph.nodeById[child.id] = child;
   if (child.event) parent.events.push(child.event);
@@ -310,6 +343,7 @@ function isFailedToolEvent(event) {
 }
 
 function classifyTimelineEvent(event) {
+  if (event.kind === "user_message") return "user";
   if (event.kind === "hook_triggered") return "hook";
   if (["input_context", "model_output_block", "token_usage", "agent_progress"].includes(event.kind)) return "model";
   if (["tool_call_detected", "tool_execution_started", "tool_execution_completed", "tool_disabled"].includes(event.kind)) return "tool";
@@ -324,6 +358,7 @@ function classifyTimelineEvent(event) {
 }
 
 function phaseForTimelineEvent(event) {
+  if (event.kind === "user_message") return "user_input";
   if (event.kind === "error") return "errors";
   if (event.kind === "prompt_version_applied" || event.kind === "input_context") return "prompt_phase";
   if (["skills_inventory", "skill_system_injected", "skill_loaded"].includes(event.kind)) return "skills";
@@ -350,6 +385,15 @@ function statusForTimelineEvent(event) {
 }
 
 function timelineEventSubtitle(event) {
+  if (event.kind === "user_message") {
+    const imageCount = extractImagesFromEvent(event).length;
+    const text = collectUserMessageText(event);
+    const textPreview = text ? truncateUserText(text) : "";
+    if (imageCount > 0 && textPreview) return `${textPreview} · 📎 ${imageCount} image${imageCount === 1 ? "" : "s"}`;
+    if (imageCount > 0) return `📎 ${imageCount} image${imageCount === 1 ? "" : "s"}`;
+    if (textPreview) return textPreview;
+    return "user message";
+  }
   if (event.kind === "hook_triggered") return event.data?.hook || friendlyTimelineKind(event.kind);
   if (event.kind === "model_output_block") return event.data?.block?.type || "model block";
   if (event.kind === "agent_progress") return event.data?.progress?.name || event.data?.progress?.subtype || "progress";
@@ -390,8 +434,9 @@ function renderTimelineNode(node, depth = 0, options = {}) {
   if (node.type === "event") return renderTimelineEventNode(node, depth);
   const open = shouldOpenTimelineNode(node, options);
   const summary = timelineNodeSummary(node);
+  const linkAttrs = timelineLinkAttrs(node);
   return `
-    <details class="timeline-node timeline-${escapeAttr(node.type)}-node ${escapeAttr(node.status || "success")}" ${open ? "open" : ""}>
+    <details class="timeline-node timeline-${escapeAttr(node.type)}-node ${escapeAttr(node.status || "success")}" ${open ? "open" : ""}${linkAttrs}>
       <summary class="timeline-node-row" style="--depth: ${depth}">
         <span class="timeline-tree-line" aria-hidden="true"></span>
         <span class="timeline-type-chip ${escapeAttr(timelineNodeTone(node))}">${escapeHtml(summary.chip)}</span>
@@ -412,8 +457,9 @@ function renderTimelineEventNode(node, depth = 0) {
   const stripHtml = images.length
     ? `<div class="timeline-event-images">${renderThumbnailStrip(images, { size: 56, group: `timeline-${node.id}` })}</div>`
     : "";
+  const linkAttrs = timelineEventLinkAttrs(node);
   return `
-    <details class="timeline-node timeline-event-node ${escapeAttr(node.category)} ${escapeAttr(node.status || "success")}" ${shouldOpenTimelineEvent(node) ? "open" : ""}>
+    <details class="timeline-node timeline-event-node ${escapeAttr(node.category)} ${escapeAttr(node.status || "success")}" ${shouldOpenTimelineEvent(node) ? "open" : ""}${linkAttrs}>
       <summary class="timeline-node-row" style="--depth: ${depth}">
         <span class="timeline-tree-line" aria-hidden="true"></span>
         <span class="timeline-type-chip ${escapeAttr(node.category)}">${escapeHtml(timelineEventChip(node))}</span>
@@ -423,6 +469,18 @@ function renderTimelineEventNode(node, depth = 0) {
       <pre class="timeline-graph-detail">${escapeHtml(JSON.stringify(safeData, null, 2))}</pre>
       ${stripHtml}
     </details>`;
+}
+
+// UI-2: chat-thread ↔ timeline 通过 data-node-id / data-node-scope 双向联动。
+function timelineLinkAttrs(node) {
+  const parts = [];
+  if (node?.nodeId) parts.push(` data-node-id="${escapeAttr(node.nodeId)}"`);
+  if (node?.scopeId) parts.push(` data-node-scope="${escapeAttr(node.scopeId)}"`);
+  return parts.join("");
+}
+
+function timelineEventLinkAttrs(node) {
+  return timelineLinkAttrs(node);
 }
 
 function shouldOpenTimelineNode(node, options = {}) {
@@ -474,6 +532,7 @@ function timelineNodeTone(node) {
   if (node.type === "run") return "run";
   if (node.type === "agent_execution") return "agent";
   if (node.type === "react_step") return "step";
+  if (node.type === "user_input") return "user";
   if (node.type === "prompt_phase") return "prompt";
   if (node.type === "model_call") return "model";
   if (node.type === "tool_planning" || node.type === "tool_execution") return "tool";
@@ -488,6 +547,7 @@ function timelineNodeTone(node) {
 
 function phaseChip(type) {
   const labels = {
+    user_input: "INPUT",
     prompt_phase: "PROMPT",
     skills: "SKILL",
     memory: "MEM",
@@ -504,6 +564,7 @@ function phaseChip(type) {
 }
 
 function timelineEventChip(node) {
+  if (node.category === "user") return "USER";
   if (node.category === "hook") return "HOOK";
   if (node.category === "model") return "MODEL";
   if (node.category === "tool") return "TOOL";
@@ -534,4 +595,20 @@ function countTimelineEvents(node) {
 function formatDurationSuffix(value) {
   if (!Number.isFinite(value) || value <= 0) return "";
   return ` · ${value >= 1000 ? `${(value / 1000).toFixed(1)}s` : `${value}ms`}`;
+}
+
+function collectUserMessageText(event) {
+  const content = Array.isArray(event?.data?.content) ? event.data.content : [];
+  const parts = [];
+  for (const block of content) {
+    if (!block) continue;
+    if (block.type === "text" && typeof block.text === "string") parts.push(block.text);
+  }
+  return parts.join("\n").trim();
+}
+
+function truncateUserText(text, max = 80) {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (flat.length <= max) return flat;
+  return `${flat.slice(0, max - 1)}…`;
 }

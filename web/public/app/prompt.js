@@ -26,7 +26,7 @@ export function syncPromptRuntime(traceEvent) {
 export async function savePromptVersion({ activate = false } = {}) {
   const editor = els.inputContext.querySelector("[data-prompt-editor]");
   if (!state.session || !editor) {
-    showError("No prompt editor available.");
+    showError("No prompt editor available.", { scope: "ui" });
     return;
   }
   const fallbackName = `Version ${(state.session.promptState?.versions?.length || 0) + 1}`;
@@ -55,7 +55,7 @@ export async function savePromptVersion({ activate = false } = {}) {
 export function buildPromptSnapshotFromEditor(editor) {
   const base = currentPromptSnapshot();
   if (!base) {
-    showError("No prompt snapshot available.");
+    showError("No prompt snapshot available.", { scope: "ui" });
     return null;
   }
   const prompt = editor.querySelector("[data-prompt-system]")?.value ?? base.prompt ?? "";
@@ -65,11 +65,11 @@ export function buildPromptSnapshotFromEditor(editor) {
   try {
     messages = JSON.parse(messagesRaw);
   } catch (error) {
-    showError(`Messages JSON is invalid: ${error.message || String(error)}`);
+    showError(`Messages JSON is invalid: ${error.message || String(error)}`, { scope: "ui" });
     return null;
   }
   if (!Array.isArray(messages)) {
-    showError("Messages JSON must be an array.");
+    showError("Messages JSON must be an array.", { scope: "ui" });
     return null;
   }
   const selectedToolIndexes = new Set(
@@ -283,7 +283,7 @@ export async function sendPromptDraft(value) {
   } catch (error) {
     promptDraftLastSent = null;
     setPromptSyncStatus(`Auto-save failed: ${error.message || String(error)}`, { flash: true });
-    showError(`Failed to save draft: ${error.message || String(error)}`);
+    showError(`Failed to save draft: ${error.message || String(error)}`, { scope: "ui" });
   } finally {
     setPromptSaveHint(false);
   }
@@ -343,7 +343,7 @@ export async function resetPromptDraft() {
     setPromptSyncStatusForState({ flash: true });
     renderRequest();
   } catch (error) {
-    showError(`Failed to reset draft: ${error.message || String(error)}`);
+    showError(`Failed to reset draft: ${error.message || String(error)}`, { scope: "ui" });
   }
 }
 

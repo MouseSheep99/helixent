@@ -13,7 +13,7 @@ export function isAgentOutputRow(row) {
 }
 
 export function buildAgentOutputGraph(rows = [], _options = {}) {
-  const graph = { runs: [], nodeById: {} };
+  const graph = { runs: [], nodeById: {}, systemErrors: [] };
   const toolByUseId = new Map();
   const stepByToolUseId = new Map();
   let currentRun = null;
@@ -49,6 +49,7 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
       type: "react_step",
       runIndex: run.index,
       stepIndex: run.steps.length + 1,
+      step: run.steps.length + 1,
       title: `ReAct ${run.steps.length + 1}`,
       status: "success",
       thinking: [],
@@ -96,6 +97,7 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
           type: "run",
           index: graph.runs.length + 1,
           title: titleText,
+          requestId: row.requestId || message.requestId || undefined,
           imageCount: images.length,
           images,
           user: addItem({
@@ -187,7 +189,6 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
     }
 
     if (row.kind === "error" && row.data?.showInOutput !== false) {
-      const run = ensureRun(rowIndex);
       const item = addItem({
         id: `item:${rowIndex}:error`,
         type: "error",
@@ -195,14 +196,22 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
         content: row,
         text: row.label || row.data?.message || "Unknown error",
       });
-      if (currentStep) currentStep.errors.push(item);
-      else run.errors.push(item);
+      const isClientError = row.data?.source === "client" || row.data?.scope === "ui";
+      if (isClientError || !currentRun) {
+        graph.systemErrors.push(item);
+      } else if (currentStep) {
+        currentStep.errors.push(item);
+      } else {
+        currentRun.errors.push(item);
+      }
     }
   }
 
   for (const run of graph.runs) {
     updateRunStatus(run);
+    markFinalResponse(run);
   }
+  assignAgentOutputNodeIds(graph);
   return graph;
 
   function ingestModelOutputBlock({ block, rowIndex, blockIndex, messageIndex: sourceMessageIndex = undefined }) {
@@ -325,6 +334,69 @@ function updateRunStatus(run) {
       : "success";
 }
 
+// UI-2: 标记最后一个 step 的最后一个 response 为 final answer。
+function markFinalResponse(run) {
+  for (let i = run.steps.length - 1; i >= 0; i--) {
+    const step = run.steps[i];
+    if (step.response.length) {
+      step.response[step.response.length - 1].isFinal = true;
+      return;
+    }
+  }
+}
+
+// Stamp canonical nodeId / scopeId onto every output-view node so the renderer
+// can emit `data-node-id` / `data-node-scope` without re-deriving anything.
+// Naming follows web/public/view/canonical-graph.js.
+function assignAgentOutputNodeIds(graph) {
+  for (const run of graph.runs) {
+    const reqKey = run.requestId || `synthetic-${run.index}`;
+    run.nodeId = `run:${reqKey}`;
+    const agentNodeId = `agent:${reqKey}:lead`;
+    run.agentNodeId = agentNodeId;
+    if (run.user) {
+      const seq = run.user.messageIndex !== undefined ? run.user.messageIndex : 0;
+      run.user.nodeId = `message:${reqKey}:user:${seq}`;
+      run.user.scopeId = run.nodeId;
+    }
+    for (let s = 0; s < run.steps.length; s++) {
+      const step = run.steps[s];
+      const stepNodeId = `step:${reqKey}:lead:${step.stepIndex}`;
+      step.nodeId = stepNodeId;
+      step.scopeId = run.nodeId;
+      for (let k = 0; k < step.thinking.length; k++) {
+        step.thinking[k].nodeId = `thinking:${run.index}:${step.stepIndex}:${k}`;
+        step.thinking[k].scopeId = stepNodeId;
+      }
+      for (let k = 0; k < step.tools.length; k++) {
+        const tool = step.tools[k];
+        tool.nodeId = tool.toolUseId
+          ? `tool:${tool.toolUseId}`
+          : `tool:${reqKey}:lead:${step.stepIndex}:${k}`;
+        tool.scopeId = stepNodeId;
+      }
+      for (let k = 0; k < step.response.length; k++) {
+        step.response[k].nodeId = `response:${run.index}:${step.stepIndex}:${k}`;
+        step.response[k].scopeId = stepNodeId;
+      }
+      for (let k = 0; k < step.errors.length; k++) {
+        const err = step.errors[k];
+        err.nodeId = `error:${err.rowIndex ?? `${run.index}:${step.stepIndex}:${k}`}`;
+        err.scopeId = stepNodeId;
+      }
+    }
+    for (let k = 0; k < run.errors.length; k++) {
+      const err = run.errors[k];
+      err.nodeId = `error:${err.rowIndex ?? `${run.index}:run:${k}`}`;
+      err.scopeId = run.nodeId;
+    }
+  }
+  for (let k = 0; k < (graph.systemErrors || []).length; k++) {
+    const err = graph.systemErrors[k];
+    err.nodeId = `error:${err.rowIndex ?? `system:${k}`}`;
+  }
+}
+
 function toolStatus(tool) {
   if (!tool.result) return "pending";
   return isToolResultError(tool.result.content) ? "error" : "success";
@@ -343,17 +415,6 @@ function isProjectContextMessage(message) {
   return message.role === "user" && messageText(message).includes("The `AGENTS.md` file has been automatically loaded");
 }
 
-// Type → chip label / tone dictionary. Adding a new node type means adding a key
-// here (and a matching tone CSS rule); render functions stay untouched. See §7.8.
-const AGENT_OUTPUT_CHIP_TONES = {
-  run: { label: "RUN", tone: "run" },
-  react_step: { label: "STEP", tone: "step" },
-  thinking: { label: "THINK", tone: "prompt" },
-  response: { label: "RESP", tone: "model" },
-  tool: { label: "TOOL", tone: "tool" },
-  error: { label: "ERR", tone: "error" },
-};
-
 const AGENT_STATUS_CHIP_TONES = {
   success: { label: "ok", tone: "model" },
   running: { label: "running", tone: "step" },
@@ -363,116 +424,198 @@ const AGENT_STATUS_CHIP_TONES = {
 
 export function renderAgentOutputGraph(graph, options = {}) {
   const runCount = graph.runs.length;
+  const systemErrors = graph.systemErrors || [];
   return `
     <div class="agent-output-graph" data-run-count="${runCount}">
-      ${graph.runs.map((run, index) => renderAgentRunNode(run, { ...options, isLatestRun: index === runCount - 1, runCount })).join("")}
+      ${renderSystemErrorsSection(systemErrors)}
+      ${renderChatThread(graph, options)}
     </div>`;
 }
 
-function renderAgentRunNode(run, options = {}) {
-  const isOpen = options.isLatestRun || options.runCount === 1;
-  const toolNames = run.steps.flatMap((step) => step.tools.map((tool) => tool.name));
-  const uniqueToolNames = [...new Set(toolNames)].slice(0, 4);
-  const subtitle = [
-    run.user?.isProjectContext ? "Project context" : "",
-    run.user?.text ? summarizeMessageText(run.user.text) : "",
-    `${run.steps.length} ReAct step${run.steps.length === 1 ? "" : "s"}`,
-    `${toolNames.length} tool${toolNames.length === 1 ? "" : "s"}`,
-    uniqueToolNames.length ? uniqueToolNames.join(", ") : "",
+function renderSystemErrorsSection(items) {
+  if (!items || !items.length) return "";
+  const body = items
+    .map((item) => `
+      <div class="agent-output-system-error" data-tone="error">
+        <span class="agent-chip" data-tone="error">ERR</span>
+        <span class="agent-output-system-error-text">${escapeHtml(item.text || "Unknown error")}</span>
+      </div>`)
+    .join("");
+  return `
+    <details class="agent-output-system-errors" open>
+      <summary>
+        <span class="agent-chip" data-tone="error">SYS</span>
+        <span class="agent-row-copy">
+          <span class="agent-row-title">System notices</span>
+          <span class="agent-row-subtitle">${items.length} item${items.length === 1 ? "" : "s"} not tied to any run</span>
+        </span>
+      </summary>
+      <div class="agent-output-system-errors-body">${body}</div>
+    </details>`;
+}
+
+// UI-1: 扁平 chat-thread 渲染（弱化 Run 概念，对齐业界 thread 范式）。
+export function renderChatThread(graph, options = {}) {
+  const turns = graph.runs.map((run) => `${renderUserTurn(run)}${renderAgentTurn(run, options)}`);
+  return `<div class="chat-thread">${turns.join("")}</div>`;
+}
+
+function renderUserTurn(run) {
+  if (!run.user) return "";
+  const userNodeAttr = run.user.nodeId ? ` data-node-id="${escapeAttr(run.user.nodeId)}"` : "";
+  const scopeAttr = run.nodeId ? ` data-node-scope="${escapeAttr(run.nodeId)}"` : "";
+  const idxAttr = run.user.messageIndex !== undefined ? ` data-message-index="${run.user.messageIndex}"` : "";
+  if (run.user.isProjectContext) {
+    return `
+      <div class="chat-context-pill"${userNodeAttr}${scopeAttr}${idxAttr}>
+        <span class="agent-chip" data-tone="default">CTX</span>
+        <span class="chat-context-label">Project context</span>
+        <span class="chat-context-text">${escapeHtml(summarizeMessageText(run.user.text || ""))}</span>
+      </div>`;
+  }
+  const text = run.user.text || "";
+  const images = Array.isArray(run.user.images) ? run.user.images : [];
+  if (!text && !images.length) return "";
+  const stripHtml = images.length
+    ? `<div class="user-bubble-images">${renderThumbnailStrip(images, { size: 80, group: `user-${run.index}` })}</div>`
+    : "";
+  const textHtml = text ? `<div class="user-bubble-text">${escapeHtml(text)}</div>` : "";
+  return `
+    <div class="user-bubble" role="button" tabindex="0"${idxAttr}${userNodeAttr}${scopeAttr}>
+      ${stripHtml}
+      ${textHtml}
+    </div>`;
+}
+
+function renderAgentTurn(run, options) {
+  const trail = renderReasoningTrail(run, options);
+  const finalHtml = renderFinalAnswer(run);
+  const agentAttr = run.agentNodeId ? ` data-node-id="${escapeAttr(run.agentNodeId)}"` : "";
+  const scopeAttr = run.nodeId ? ` data-node-scope="${escapeAttr(run.nodeId)}"` : "";
+  const sentPromptIcon = renderSentPromptIcon(run.sentPromptRowIndex);
+  const meta = sentPromptIcon ? `<div class="agent-turn-meta">${sentPromptIcon}</div>` : "";
+  if (!trail && !finalHtml) {
+    return `<div class="agent-turn empty" data-status="${escapeAttr(run.status)}"${agentAttr}${scopeAttr}>${meta}<div class="agent-detail-empty">No model output in this run yet.</div></div>`;
+  }
+  return `
+    <div class="agent-turn" data-status="${escapeAttr(run.status)}"${agentAttr}${scopeAttr}>
+      ${meta}
+      ${trail}
+      ${finalHtml}
+    </div>`;
+}
+
+function renderReasoningTrail(run, options = {}) {
+  // 收集 turn 级 inline 项：每个 step 的 thinking + tools，以及非 final 的 response。
+  const items = [];
+  for (const step of run.steps) {
+    for (const t of step.thinking) items.push({ kind: "thinking", item: t, step });
+    for (const t of step.tools) items.push({ kind: "tool", item: t, step });
+    for (const r of step.response) {
+      if (!r.isFinal) items.push({ kind: "response_inline", item: r, step });
+    }
+    for (const e of step.errors) items.push({ kind: "error", item: e, step });
+  }
+  for (const e of run.errors) items.push({ kind: "error", item: e, step: null });
+
+  if (!items.length) return "";
+
+  const stepCount = run.steps.length;
+  const toolCount = items.filter((x) => x.kind === "tool").length;
+  const toolNames = [...new Set(items.filter((x) => x.kind === "tool").map((x) => x.item.name))].slice(0, 5);
+  const summary = [
+    `Thought for ${stepCount} step${stepCount === 1 ? "" : "s"}`,
+    toolCount ? `${toolCount} tool${toolCount === 1 ? "" : "s"}` : "",
+    toolNames.length ? toolNames.join(" · ") : "",
   ].filter(Boolean).join(" · ");
+  const isOpen = run.status === "error" || options.forceOpenReasoning;
   const inspectButton = run.user?.messageIndex !== undefined
     ? `<button class="ghost-button mini-button agent-inspect-button" type="button" data-message-index="${run.user.messageIndex}">Inspect</button>`
     : "";
-  const imageChip = run.imageCount
-    ? `<span class="agent-chip" data-tone="prompt">📎 ${run.imageCount}</span>`
-    : "";
-  const userImagesStrip = run.user && Array.isArray(run.user.images) && run.user.images.length
-    ? `<div class="agent-run-user-images">${renderThumbnailStrip(run.user.images, { size: 80, group: `run-${run.index}-user` })}</div>`
-    : "";
+  const scopeAttr = run.nodeId ? ` data-node-scope="${escapeAttr(run.nodeId)}"` : "";
+  const body = items.map((x) => renderTrailItem(x, run)).join("");
   return `
-    <details class="agent-run" data-status="${escapeAttr(run.status)}" ${isOpen ? "open" : ""}>
-      <summary class="agent-run-summary">
-        ${renderAgentAnchor({ withHook: false })}
-        ${renderAgentChip("run", run.status)}
-        <span class="agent-row-copy">
-          <span class="agent-row-title">${escapeHtml(`Run ${run.index}`)}</span>
-          <span class="agent-row-subtitle">${escapeHtml(subtitle || run.title)}</span>
-        </span>
-        <span class="agent-row-meta">
-          ${imageChip}
+    <details class="reasoning-trail" data-status="${escapeAttr(run.status)}" ${isOpen ? "open" : ""}${scopeAttr}>
+      <summary class="reasoning-trail-summary">
+        <span class="reasoning-trail-icon" aria-hidden="true"></span>
+        <span class="reasoning-trail-text">${escapeHtml(summary)}</span>
+        <span class="reasoning-trail-meta">
           ${renderAgentStatusChip(run.status)}
           ${inspectButton}
         </span>
       </summary>
-      ${renderSentPromptIcon(run.sentPromptRowIndex)}
-      <div class="agent-run-children">
-        ${userImagesStrip}
-        ${run.errors.map((item) => renderAgentOutputItem(item, 0)).join("")}
-        ${run.steps.map((step, stepIdx) => renderReactStepNode(step, 0, { isOnlyStep: run.steps.length === 1, isLatestStep: stepIdx === run.steps.length - 1 })).join("")}
-        ${!run.steps.length && !run.errors.length ? `<div class="agent-detail-empty">No model output in this run yet.</div>` : ""}
-      </div>
+      <div class="reasoning-trail-body">${body}</div>
     </details>`;
 }
 
-function renderReactStepNode(step, depth = 0, options = {}) {
-  const toolNames = step.tools.map((tool) => tool.name);
-  const titleBits = [
-    step.thinking.length ? "Thinking" : "",
-    step.tools.length ? `${step.tools.length} tool${step.tools.length === 1 ? "" : "s"}` : "",
-    step.response.length ? "Response" : "",
-  ].filter(Boolean);
-  const subtitle = [
-    titleBits.join(" + ") || "Model output",
-    toolNames.slice(0, 4).join(", "),
-  ].filter(Boolean).join(" · ");
-  const isOpen = step.status === "error" || options.isOnlyStep || options.isLatestStep;
-  return `
-    <details class="agent-row react-step" data-status="${escapeAttr(step.status)}" style="--depth: ${depth}" ${isOpen ? "open" : ""}>
-      <summary class="agent-row-summary">
-        ${renderAgentAnchor()}
-        ${renderAgentChip("react_step", step.status)}
-        <span class="agent-row-copy">
-          <span class="agent-row-title">${escapeHtml(step.title)}</span>
-          <span class="agent-row-subtitle">${escapeHtml(subtitle)}</span>
-        </span>
-        <span class="agent-row-meta">
-          ${renderAgentStatusChip(step.status)}
-        </span>
-      </summary>
-      <div class="agent-row-children">
-        ${step.errors.map((item) => renderAgentOutputItem(item, depth + 1)).join("")}
-        ${step.thinking.map((item) => renderAgentOutputItem(item, depth + 1)).join("")}
-        ${step.tools.map((tool) => renderToolCallNode(tool, depth + 1)).join("")}
-        ${step.response.map((item) => renderAgentOutputItem(item, depth + 1)).join("")}
-      </div>
-    </details>`;
+function renderTrailItem({ kind, item, step }, _run) {
+  const nodeAttr = item.nodeId ? ` data-node-id="${escapeAttr(item.nodeId)}"` : "";
+  const scopeAttr = item.scopeId ? ` data-node-scope="${escapeAttr(item.scopeId)}"` : (step?.nodeId ? ` data-node-scope="${escapeAttr(step.nodeId)}"` : "");
+  if (kind === "thinking") {
+    const text = item.text || item.content?.thinking || "";
+    return `
+      <div class="trail-item trail-thinking"${nodeAttr}${scopeAttr}>
+        <span class="trail-thinking-quote" aria-hidden="true">❝</span>
+        <div class="trail-thinking-text">${escapeHtml(text)}</div>
+      </div>`;
+  }
+  if (kind === "tool") {
+    const subtitle = summarizeToolInput(item.input);
+    const inspectButton = item.result?.messageIndex !== undefined
+      ? `<button class="ghost-button mini-button agent-inspect-button" type="button" data-message-index="${item.result.messageIndex}">Inspect</button>`
+      : "";
+    const detail = `
+      ${item.request ? renderToolSection("Input", item.input || item.request.content?.input || {}) : ""}
+      ${item.detected ? renderToolSection("Detected", item.detected.content || {}) : ""}
+      ${item.result ? renderToolSection("Result", item.result.content || {}) : `<div class="agent-detail-empty">Tool result pending.</div>`}
+    `;
+    return `
+      <details class="trail-item trail-tool tool-call" data-status="${escapeAttr(item.status)}"${nodeAttr}${scopeAttr}>
+        <summary class="trail-tool-summary">
+          <span class="trail-tool-icon" aria-hidden="true">⚙</span>
+          <span class="trail-tool-name">${escapeHtml(item.name)}</span>
+          <span class="trail-tool-subtitle">${escapeHtml(subtitle)}</span>
+          <span class="trail-tool-meta">
+            ${renderAgentStatusChip(item.status)}
+            ${inspectButton}
+          </span>
+        </summary>
+        <div class="trail-tool-detail">${detail}</div>
+      </details>`;
+  }
+  if (kind === "response_inline") {
+    const text = item.text || formatOutputValue(item.content);
+    return `
+      <div class="trail-item trail-response-inline"${nodeAttr}${scopeAttr}>
+        <div class="trail-response-text">${escapeHtml(text)}</div>
+      </div>`;
+  }
+  if (kind === "error") {
+    const text = item.text || item.content?.label || item.content?.data?.message || "Unknown error";
+    return `
+      <div class="trail-item trail-error"${nodeAttr}${scopeAttr}>
+        <span class="trail-error-icon" aria-hidden="true">✕</span>
+        <span class="trail-error-text">Runtime error — ${escapeHtml(text)}</span>
+      </div>`;
+  }
+  return "";
 }
 
-function renderToolCallNode(tool, depth = 0) {
-  const inputPreview = summarizeToolInput(tool.input);
-  const inspectButton = tool.result?.messageIndex !== undefined
-    ? `<button class="ghost-button mini-button agent-inspect-button" type="button" data-message-index="${tool.result.messageIndex}">Inspect</button>`
-    : "";
-  return `
-    <details class="agent-row tool-call" data-status="${escapeAttr(tool.status)}" style="--depth: ${depth}">
-      <summary class="agent-row-summary">
-        ${renderAgentAnchor()}
-        ${renderAgentChip("tool", tool.status)}
-        <span class="agent-row-copy">
-          <span class="agent-row-title">${escapeHtml(tool.name)}</span>
-          <span class="agent-row-subtitle">${escapeHtml(inputPreview || "No input captured")}</span>
-        </span>
-        <span class="agent-row-meta">
-          ${renderAgentStatusChip(tool.status)}
-          ${inspectButton}
-        </span>
-      </summary>
-      <div class="agent-row-detail" style="--depth: ${depth}">
-        ${tool.request ? renderToolSection("Input", tool.input || tool.request.content?.input || {}) : ""}
-        ${tool.detected ? renderToolSection("Detected", tool.detected.content || {}) : ""}
-        ${tool.result ? renderToolSection("Result", tool.result.content || {}) : `<div class="agent-detail-empty">Tool result pending.</div>`}
-      </div>
-    </details>`;
+function renderFinalAnswer(run) {
+  for (let i = run.steps.length - 1; i >= 0; i--) {
+    const step = run.steps[i];
+    const finalItem = step.response.find((r) => r.isFinal);
+    if (!finalItem) continue;
+    const text = finalItem.text || finalItem.content?.text || "";
+    if (!String(text).trim()) return "";
+    const nodeAttr = finalItem.nodeId ? ` data-node-id="${escapeAttr(finalItem.nodeId)}"` : "";
+    const scopeAttr = step.nodeId ? ` data-node-scope="${escapeAttr(step.nodeId)}"` : "";
+    return `
+      <div class="final-answer"${nodeAttr}${scopeAttr}>
+        <div class="final-answer-text">${escapeHtml(text)}</div>
+      </div>`;
+  }
+  return "";
 }
 
 function renderToolSection(label, value) {
@@ -484,83 +627,6 @@ function renderToolSection(label, value) {
     </section>`;
 }
 
-function renderAgentOutputItem(item, depth = 0) {
-  const config = agentOutputItemConfig(item);
-  const inspectButton = item.messageIndex !== undefined
-    ? `<button class="ghost-button mini-button agent-inspect-button" type="button" data-message-index="${item.messageIndex}">Inspect</button>`
-    : "";
-  return `
-    <details class="agent-row agent-detail-node ${escapeAttr(item.type)}" data-status="${escapeAttr(config.status)}" style="--depth: ${depth}">
-      <summary class="agent-row-summary">
-        ${renderAgentAnchor()}
-        ${renderAgentChip(config.chipType, config.status)}
-        <span class="agent-row-copy">
-          <span class="agent-row-title">${escapeHtml(config.title)}</span>
-          <span class="agent-row-subtitle">${escapeHtml(config.preview)}</span>
-        </span>
-        <span class="agent-row-meta">
-          ${inspectButton}
-        </span>
-      </summary>
-      <div class="agent-row-detail" style="--depth: ${depth}">
-        ${config.body}
-      </div>
-    </details>`;
-}
-
-function agentOutputItemConfig(item) {
-  if (item.type === "thinking") {
-    const text = item.text || item.content?.thinking || "";
-    return {
-      title: "Thinking",
-      chipType: "thinking",
-      status: "success",
-      preview: summarizeMessageText(text),
-      body: `<div class="agent-detail-text">${escapeHtml(text)}</div>`,
-    };
-  }
-  if (item.type === "response") {
-    const text = item.text || item.content?.text || formatOutputValue(item.content);
-    return {
-      title: "Response",
-      chipType: "response",
-      status: "success",
-      preview: summarizeMessageText(text),
-      body: `<div class="agent-detail-text">${escapeHtml(text)}</div>`,
-    };
-  }
-  if (item.type === "error") {
-    const text = item.text || item.content?.label || item.content?.data?.message || "Unknown error";
-    return {
-      title: "Runtime error",
-      chipType: "error",
-      status: "error",
-      preview: summarizeMessageText(text),
-      body: `<div class="agent-detail-text">${escapeHtml(text)}</div>`,
-    };
-  }
-  return {
-    title: item.type,
-    chipType: item.type,
-    status: "success",
-    preview: summarizeMessageText(formatOutputValue(item.content)),
-    body: `<pre class="agent-detail-pre">${escapeHtml(formatOutputValue(item.content))}</pre>`,
-  };
-}
-
-function renderAgentAnchor({ withHook = true } = {}) {
-  return `<span class="agent-row-anchor${withHook ? "" : " no-hook"}" aria-hidden="true"><span class="agent-row-chevron"></span></span>`;
-}
-
-function renderAgentChip(chipType, status = "success") {
-  const entry = AGENT_OUTPUT_CHIP_TONES[chipType];
-  if (!entry) {
-    return `<span class="agent-chip" data-tone="default">${escapeHtml(String(chipType || "").toUpperCase())}</span>`;
-  }
-  const tone = status === "error" ? "error" : entry.tone;
-  return `<span class="agent-chip" data-tone="${escapeAttr(tone)}">${escapeHtml(entry.label)}</span>`;
-}
-
 function renderAgentStatusChip(status = "success") {
   const entry = AGENT_STATUS_CHIP_TONES[status] || AGENT_STATUS_CHIP_TONES.success;
   return `<span class="agent-status-chip" data-tone="${escapeAttr(entry.tone)}" data-status="${escapeAttr(status)}">${escapeHtml(entry.label)}</span>`;
@@ -568,11 +634,14 @@ function renderAgentStatusChip(status = "success") {
 
 function summarizeToolInput(input) {
   if (!input || typeof input !== "object") return "";
+  const priorityKeys = ["description", "command", "path", "file_path", "pattern", "url", "query"];
+  for (const key of priorityKeys) {
+    if (typeof input[key] === "string" && input[key]) return `${key}: ${input[key]}`;
+  }
   const entries = Object.entries(input);
   if (!entries.length) return "";
-  const [key, value] = entries[0];
-  const rendered = typeof value === "string" ? value : JSON.stringify(value);
-  return `${key}: ${rendered}`;
+  const [k, v] = entries[0];
+  return `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`;
 }
 
 function formatOutputValue(value) {

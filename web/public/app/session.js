@@ -10,6 +10,7 @@ import { loadConfig, saveConfig, openConfigDialog } from "./config.js";
 import { loadTraces, renderTraces } from "./traces.js";
 import { loadSkills, openSkillEditor, saveSkill, deleteSkill } from "./skills.js";
 import { copyTraceExport, downloadTraceExport } from "./trace-export.js";
+import { copyTimelineExport, downloadTimelineExport } from "./timeline-export.js";
 import { SESSION_STORAGE_KEY } from "./state.js";
 
 const ACCEPTED_IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -18,6 +19,7 @@ const MAX_IMAGES_PER_MESSAGE = 4;
 
 export async function init() {
   restoreSidebarState();
+  restoreTimelineState();
   bindEvents();
   await loadTraces();
   await loadSkills();
@@ -31,6 +33,7 @@ export async function init() {
 
 export function bindEvents() {
   els.toggleSidebar.addEventListener("click", toggleSidebar);
+  els.toggleTimeline.addEventListener("click", toggleTimeline);
   els.sidebarPanelToggles.forEach((heading) => {
     heading.addEventListener("click", (event) => {
       if (event.target.closest("button,input")) return;
@@ -47,6 +50,8 @@ export function bindEvents() {
   els.abortRun.addEventListener("click", abortRun);
   els.copyTrace.addEventListener("click", copyTraceExport);
   els.exportTrace.addEventListener("click", downloadTraceExport);
+  els.copyTimeline.addEventListener("click", copyTimelineExport);
+  els.exportTimeline.addEventListener("click", downloadTimelineExport);
   els.timelineFilter.addEventListener("change", renderTimeline);
   els.timelineFilterButtons.forEach((button) => {
     button.addEventListener("click", () => setTimelineFilter(button.dataset.timelineFilter));
@@ -129,15 +134,15 @@ export async function addPendingImages(files) {
   const accepted = [];
   for (const file of files) {
     if (!ACCEPTED_IMAGE_MIME.has(file.type)) {
-      showError(`Unsupported image type: ${file.type || file.name}`);
+      showError(`Unsupported image type: ${file.type || file.name}`, { scope: "ui" });
       continue;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      showError(`Image too large (max 5 MB): ${file.name}`);
+      showError(`Image too large (max 5 MB): ${file.name}`, { scope: "ui" });
       continue;
     }
     if (state.pendingImages.length + accepted.length >= MAX_IMAGES_PER_MESSAGE) {
-      showError(`At most ${MAX_IMAGES_PER_MESSAGE} images per message.`);
+      showError(`At most ${MAX_IMAGES_PER_MESSAGE} images per message.`, { scope: "ui" });
       break;
     }
     accepted.push(file);
@@ -152,7 +157,7 @@ export async function addPendingImages(files) {
         size: file.size,
       });
     } catch (error) {
-      showError(`Failed to read ${file.name}: ${error?.message || error}`);
+      showError(`Failed to read ${file.name}: ${error?.message || error}`, { scope: "ui" });
     }
   }
   renderComposerAttachments();
@@ -209,8 +214,27 @@ export function toggleSidebar() {
 export function setSidebarCollapsed(collapsed) {
   document.body.classList.toggle("sidebar-collapsed", collapsed);
   els.toggleSidebar.setAttribute("aria-pressed", String(collapsed));
-  els.toggleSidebar.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  const label = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  els.toggleSidebar.setAttribute("aria-label", label);
+  els.toggleSidebar.title = label;
   localStorage.setItem("helixent.sidebarCollapsed", String(collapsed));
+}
+
+export function toggleTimeline() {
+  setTimelineCollapsed(!document.body.classList.contains("timeline-collapsed"));
+}
+
+export function setTimelineCollapsed(collapsed) {
+  document.body.classList.toggle("timeline-collapsed", collapsed);
+  els.toggleTimeline.setAttribute("aria-pressed", String(collapsed));
+  const label = collapsed ? "Expand timeline" : "Collapse timeline";
+  els.toggleTimeline.setAttribute("aria-label", label);
+  els.toggleTimeline.title = label;
+  localStorage.setItem("helixent.timelineCollapsed", String(collapsed));
+}
+
+export function restoreTimelineState() {
+  setTimelineCollapsed(localStorage.getItem("helixent.timelineCollapsed") === "true");
 }
 
 export async function resumeOrStartSession() {

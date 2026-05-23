@@ -12,8 +12,9 @@ export function extractImagesFromMessage(message, source = "user") {
 
 /**
  * Extract image view models from a SSE / trace event.
- * Currently supports `input_context` (event.data.messages[].content[]) and
- * `model_output_block` events whose `block` is a user image_url.
+ * Currently supports `input_context` (event.data.messages[].content[]),
+ * `model_output_block` events whose `block` is a user image_url, and
+ * `user_message` events (BF-2: timeline first-class user input entry).
  */
 export function extractImagesFromEvent(event) {
   if (!event || !event.data) return [];
@@ -32,6 +33,10 @@ export function extractImagesFromEvent(event) {
     if (block && block.type === "image_url") {
       return collectImageURLContents([block], "trace");
     }
+  }
+  if (kind === "user_message") {
+    const content = Array.isArray(event.data.content) ? event.data.content : [];
+    return collectImageURLContents(content, "user");
   }
   return [];
 }

@@ -27,7 +27,7 @@ export async function saveConfig(event) {
     const existingModel = models.find((model) => model.name === modelName);
     const canKeepExistingKey = Boolean(existingModel?.hasAPIKey || existingModel?.APIKey);
     if (!modelName || !baseURL || (!APIKey && !canKeepExistingKey)) {
-      showError("Model name, base URL, and API key are required for a new model. Existing models can keep their saved key.");
+      showError("Model name, base URL, and API key are required for a new model. Existing models can keep their saved key.", { scope: "ui" });
       return;
     }
     const nextModel = { name: modelName, baseURL, APIKey, provider: providerType };
@@ -40,7 +40,7 @@ export async function saveConfig(event) {
 
   const defaultModel = els.defaultModelInput.value || modelName || models[0]?.name;
   if (!models.length || !defaultModel) {
-    showError("Add at least one model before saving.");
+    showError("Add at least one model before saving.", { scope: "ui" });
     return;
   }
 

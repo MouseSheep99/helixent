@@ -433,6 +433,13 @@ async function submitMessage(session: WebSession, body: SubmitMessageBody) {
     content: buildUserMessageContent(text, images),
   };
   emit(session, { type: "message", message: userMessage });
+  emit(session, {
+    type: "trace",
+    event: trace(session, "user_message", "User message", {
+      role: "user",
+      content: userMessage.content,
+    }),
+  });
 
   void (async () => {
     try {
@@ -448,7 +455,9 @@ async function submitMessage(session: WebSession, body: SubmitMessageBody) {
         if (event.type === "message") {
           emit(session, { type: "message", message: event.message });
           const todoState = buildTodoViewState(session.agent.messages);
-          emit(session, { type: "todo_update", todos: todoState.latestTodos });
+          if ((todoState.latestTodos?.length ?? 0) > 0) {
+            emit(session, { type: "todo_update", todos: todoState.latestTodos });
+          }
         }
       }
     } catch (error) {
@@ -697,7 +706,9 @@ function emit(session: WebSession, event: ServerEvent) {
   } else if (event.type === "message") {
     void appendTraceLine(session.tracePath, event);
   } else if (event.type === "todo_update") {
-    void appendTraceLine(session.tracePath, trace(session, "todo_update", "Todo panel updated", { todos: event.todos ?? [] }));
+    if ((event.todos ?? []).length > 0) {
+      void appendTraceLine(session.tracePath, trace(session, "todo_update", "Todo panel updated", { todos: event.todos ?? [] }));
+    }
   } else if (event.type === "error") {
     void appendTraceLine(session.tracePath, trace(session, "error", event.message, { message: event.message }));
   }

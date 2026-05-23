@@ -33,6 +33,20 @@ describe("Trace Lens frontend smoke", () => {
     expect(html).toContain("Run Metrics");
     expect(html).toContain('id="runMetrics"');
     expect(html).toContain("Hook & Tool Timeline");
+    // edge-handle DOM 已注入（R1 R2 R4）
+    expect(html).toContain('id="toggleSidebar"');
+    expect(html).toContain('id="toggleTimeline"');
+    expect(html).toContain('class="edge-handle edge-handle-left"');
+    expect(html).toContain('class="edge-handle edge-handle-right"');
+    // timeline-rail 存在（R1）
+    expect(html).toContain('class="timeline-rail"');
+    // topbar 不再有旧的 sidebar-toggle 类（R2）
+    expect(html).not.toContain('class="ghost-button icon-button sidebar-toggle"');
+    // panel-heading 含 chevron（R5）
+    expect(html).toContain('class="panel-chevron"');
+    // cache busting（D9）
+    expect(html).toContain("v=trace-lens-workbench-71");
+    expect(html).not.toContain("v=trace-lens-workbench-70");
   });
 
   test("reconstructs request navigation, model output, tools, skills, and timeline from a trace replay", () => {
@@ -136,7 +150,7 @@ describe("Trace Lens frontend smoke", () => {
     expect(request.body).toContain("Replay mode");
     expect(request.diff).toContain("No runtime baseline captured yet.");
     expect(output).toContain("agent-output-graph");
-    expect(output).toContain("Thinking");
+    expect(output).toContain("trail-thinking");
     expect(output).toContain("I will run the test suite.");
     expect(output).toContain("tool-call");
     expect(output).toContain("bash");

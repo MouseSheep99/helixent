@@ -189,7 +189,10 @@ function timelineDetail(row) {
 function isOutputRow(row) {
   if (row?.kind === "model_output_block") return true;
   if (row?.kind === "tool_call_detected") return true;
-  if (row?.kind === "error" && row.data?.showInOutput !== false) return true;
+  if (row?.kind === "error" && row.data?.showInOutput !== false) {
+    if (row.data?.source === "client" || row.data?.scope === "ui") return false;
+    return true;
+  }
   return row?.type === "message" && row.message?.role === "tool";
 }
 

@@ -428,7 +428,7 @@ describe("frontend view helpers", () => {
     expect(html).toContain("Project context");
     expect(html).toContain("/coding-plan build tests");
     expect(html).toContain("agent-output-graph");
-    expect(html).toContain("Response");
+    expect(html).toContain("final-answer-text");
     expect(html).toContain("unknown_tool");
     expect(html).toContain("Result");
     expect(html).toContain('data-message-index="0"'); // project context message
@@ -513,9 +513,9 @@ describe("frontend view helpers", () => {
       },
     ]);
 
-    expect(html).toContain("agent-detail-node thinking");
+    expect(html).toContain("trail-thinking");
     expect(html).toContain("Let me reason about the request first.");
-    expect(html).toContain("agent-detail-node response");
+    expect(html).toContain("final-answer-text");
     expect(html).toContain("Here is what I will do.");
     expect(html).toContain("tool-call");
     expect(html).toContain("ask_user_question");
@@ -541,8 +541,8 @@ describe("frontend view helpers", () => {
       },
     ]);
 
-    expect((html.match(/<div class="agent-detail-text">Reason once\.<\/div>/g) || []).length).toBe(1);
-    expect((html.match(/<div class="agent-detail-text">Answer once\.<\/div>/g) || []).length).toBe(1);
+    expect((html.match(/<div class="trail-thinking-text">Reason once\.<\/div>/g) || []).length).toBe(1);
+    expect((html.match(/<div class="final-answer-text">Answer once\.<\/div>/g) || []).length).toBe(1);
   });
 
   test("renders model output block variants and tool results", () => {
@@ -559,8 +559,8 @@ describe("frontend view helpers", () => {
       [{ role: "tool", content: [{ type: "tool_result", content: "ok" }] }],
     );
 
-    expect(html).toContain("Thinking");
-    expect(html).toContain("Response");
+    expect(html).toContain("trail-thinking");
+    expect(html).toContain("final-answer-text");
     expect(html).toContain("bash");
     expect(html).toContain("tool-call");
     expect(html).not.toContain("Token usage");

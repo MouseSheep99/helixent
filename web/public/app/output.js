@@ -116,7 +116,14 @@ export async function submitQuestion(request) {
 }
 
 export function renderTodo(todos) {
-  state.todos = todos || [];
+  const next = todos || [];
+  const prev = state.todos || [];
+  state.todos = next;
+  if (!View.shouldRecordTodoUpdate(prev, next)) {
+    renderRunState();
+    renderTodoPanel();
+    return;
+  }
   const event = View.createTodoTraceEvent(state.todos);
   state.events.push(event);
   appendTraceRow(event);

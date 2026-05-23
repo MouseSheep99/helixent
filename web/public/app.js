@@ -14,5 +14,7 @@ import "./app/trace-export.js";
 import "./view/image-lightbox.js";
 import { init } from "./app/session.js";
 import { showError } from "./app/api.js";
+import { initOutputTimelineLink } from "./app/link.js";
 
-init().catch((error) => showError(error.message || String(error)));
+initOutputTimelineLink();
+init().catch((error) => showError(error.message || String(error), { scope: "ui" }));

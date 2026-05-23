@@ -19,6 +19,18 @@
     grid-template-columns: 280px minmax(0, 1fr) 320px;
   }
 
+  .sidebar-collapsed .workspace {
+    grid-template-columns: 56px minmax(0, 1fr) 320px;
+  }
+
+  .timeline-collapsed .workspace {
+    grid-template-columns: 280px minmax(0, 1fr) 56px;
+  }
+
+  .sidebar-collapsed.timeline-collapsed .workspace {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+  }
+
   .workbench-columns {
     grid-template-columns: 1fr;
   }
@@ -35,6 +47,10 @@
   }
 
   .timeline-pane {
+    display: none;
+  }
+
+  #toggleTimeline {
     display: none;
   }
 
@@ -59,6 +75,10 @@
   }
 
   .sidebar {
+    display: none;
+  }
+
+  #toggleSidebar {
     display: none;
   }
 

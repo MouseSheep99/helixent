@@ -34,10 +34,6 @@
   gap: 12px;
 }
 
-.sidebar-toggle {
-  color: var(--text-secondary);
-}
-
 .brand-mark {
   position: relative;
   width: 42px;
@@ -151,6 +147,14 @@
   grid-template-columns: 56px minmax(0, 1fr) 360px;
 }
 
+.timeline-collapsed .workspace {
+  grid-template-columns: 300px minmax(0, 1fr) 56px;
+}
+
+.sidebar-collapsed.timeline-collapsed .workspace {
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
+}
+
 .sidebar,
 .center-workbench,
 .timeline-pane {
@@ -221,6 +225,7 @@
   gap: 12px;
   padding: 2px;
   overflow: hidden;
+  position: relative;
 }
 
 .panel {
@@ -367,4 +372,113 @@
 
 .request-pane-title {
   padding-bottom: 4px;
+}
+
+/* Edge collapse handles —— sidebar 与 timeline-pane 边缘的折叠按钮 */
+.edge-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 5;
+  color: var(--text-tertiary);
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
+}
+
+.edge-handle:hover {
+  background: linear-gradient(90deg, transparent, rgba(79, 163, 255, 0.12), transparent);
+  color: var(--accent-primary-strong);
+}
+
+.edge-handle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
+.edge-handle-left {
+  right: 0;
+}
+
+.edge-handle-right {
+  left: 0;
+}
+
+.edge-handle-icon {
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transition: transform 0.2s ease;
+}
+
+.edge-handle-left .edge-handle-icon {
+  border-right: 6px solid currentColor;
+}
+
+.edge-handle-right .edge-handle-icon {
+  border-left: 6px solid currentColor;
+}
+
+.sidebar-collapsed .edge-handle-left .edge-handle-icon {
+  transform: rotate(180deg);
+}
+
+.timeline-collapsed .edge-handle-right .edge-handle-icon {
+  transform: rotate(180deg);
+}
+
+/* timeline-pane 折叠态：复用 sidebar-rail 模式 */
+.timeline-rail {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  writing-mode: vertical-rl;
+  padding: 18px 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.timeline-collapsed .timeline-pane > :not(.edge-handle):not(.timeline-rail) {
+  display: none;
+}
+
+.timeline-collapsed .timeline-rail {
+  display: flex;
+}
+
+.timeline-collapsed .timeline-pane {
+  align-items: center;
+}
+
+/* panel-heading 折叠指示 chevron */
+.panel-heading-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.panel-chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  transition: transform 0.2s ease;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.sidebar-panel.collapsed .panel-chevron {
+  transform: rotate(-90deg);
 }

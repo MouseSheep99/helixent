@@ -31,6 +31,7 @@ export type TraceKind =
   | "token_usage"
   | "todo_update"
   | "agent_progress"
+  | "user_message"
   | "error";
 
 export interface TraceEvent {

@@ -19,18 +19,56 @@ export async function api(path, options = {}) {
 }
 
 export function showError(message, options = {}) {
+  const { source = "server", scope = "trace", showInOutput = true, autoDismissMs } = options;
+  if (scope === "ui") {
+    showNotice(message, { tone: "error", autoDismissMs });
+    return;
+  }
   const event = {
     id: crypto.randomUUID(),
     kind: "error",
     at: new Date().toISOString(),
     label: message,
-    data: { message, showInOutput: options.showInOutput !== false },
+    data: { message, source, scope, showInOutput },
   };
   state.events.push(event);
   appendTraceRow(event);
   renderTimeline();
   renderRunState();
-  if (options.showInOutput !== false) renderOutput();
+  if (showInOutput) renderOutput();
+}
+
+export function showNotice(message, options = {}) {
+  const { tone = "info", autoDismissMs = 5000 } = options;
+  const container = els.appNotices;
+  if (!container) {
+    // Fallback: still surface to console so the message is not silently lost.
+    // eslint-disable-next-line no-console
+    console.warn("[notice]", message);
+    return;
+  }
+  const item = document.createElement("div");
+  item.className = "app-notice";
+  item.dataset.tone = tone;
+  item.setAttribute("role", "status");
+  const text = document.createElement("span");
+  text.className = "app-notice-text";
+  text.textContent = String(message ?? "");
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "app-notice-close";
+  closeBtn.setAttribute("aria-label", "Dismiss");
+  closeBtn.textContent = "×";
+  const dismiss = () => {
+    if (item.isConnected) item.remove();
+  };
+  closeBtn.addEventListener("click", dismiss);
+  item.appendChild(text);
+  item.appendChild(closeBtn);
+  container.appendChild(item);
+  if (autoDismissMs > 0) {
+    setTimeout(dismiss, autoDismissMs);
+  }
 }
 
 export function flashStatus(message) {

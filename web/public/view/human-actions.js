@@ -71,3 +71,10 @@ export function createTodoTraceEvent(todos = []) {
     data: { todos, summary },
   };
 }
+
+// BF-1: 仅在状态发生有意义的变化时记录 todo_update。
+// 上一次和这一次都是空 → 视为冗余，不记录。
+// 任一非空 → 记录（包括 3 → 0 这种"主动清空"，因为是有效状态变更）。
+export function shouldRecordTodoUpdate(prev = [], next = []) {
+  return (prev?.length ?? 0) > 0 || (next?.length ?? 0) > 0;
+}

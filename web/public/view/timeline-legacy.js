@@ -61,6 +61,10 @@ export function renderTimelineItem(event) {
 
 export function timelineBadge(event) {
   const count = event.count || event.data?.count;
+  if (event.kind === "user_message") {
+    const imageCount = extractImagesFromEvent(event).length;
+    return imageCount > 0 ? `${imageCount} img` : "user";
+  }
   if (event.kind === "tool_call_detected") return event.data?.toolUse?.name || "tool";
   if (event.kind === "tool_execution_started" || event.kind === "tool_execution_completed") return event.data?.toolName || event.data?.name || "tool";
   if (event.kind === "approval_requested") return "approval";
@@ -79,6 +83,7 @@ export function friendlyTimelineKind(kind = "") {
 }
 
 export function timelineIcon(kind = "") {
+  if (kind === "user_message") return "▶";
   if (["approval_requested", "approval_resolved", "question_requested", "question_resolved"].includes(kind)) return "◎";
   if (["tool_call_detected", "tool_execution_started", "tool_execution_completed", "tool_disabled"].includes(kind)) return "⌘";
   if (["hook_triggered", "agent_progress", "input_context", "model_output_block", "token_usage"].includes(kind)) return "◌";
@@ -102,10 +107,17 @@ export function shouldShowTimelineEvent(event, filter = "all") {
     ].includes(event.kind);
   }
   if (filter === "human") {
-    return ["approval_requested", "approval_resolved", "question_requested", "question_resolved"].includes(event.kind);
+    return [
+      "user_message",
+      "approval_requested",
+      "approval_resolved",
+      "question_requested",
+      "question_resolved",
+    ].includes(event.kind);
   }
   if (filter === "session") {
     return [
+      "user_message",
       "session_created",
       "session_cleared",
       "session_aborted",

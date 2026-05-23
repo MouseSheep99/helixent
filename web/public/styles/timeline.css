@@ -141,6 +141,16 @@
   color: var(--text-tertiary);
 }
 
+.timeline-type-chip.user {
+  border-color: rgba(122, 200, 255, 0.36);
+  color: var(--accent-cyan);
+  background: rgba(122, 200, 255, 0.1);
+}
+
+.timeline-event-node.user > .timeline-node-row {
+  background: rgba(122, 200, 255, 0.04);
+}
+
 .timeline-node-title {
   min-width: 0;
   overflow: hidden;
@@ -189,20 +199,97 @@
 }
 
 .timeline-tabs {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .filter-pill {
   border-color: var(--border-subtle);
   background: rgba(255, 255, 255, 0.02);
   color: var(--text-secondary);
-  padding: 8px 9px;
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 .filter-pill.active {
   border-color: rgba(79, 163, 255, 0.8);
   background: var(--accent-soft);
   color: var(--text-primary);
+}
+
+/* UI-3: sticky header (title + tabs + highlight chip in one row). */
+.timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 6px 2px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.timeline-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.timeline-header-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.timeline-export-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px 4px;
+  flex-wrap: wrap;
+}
+.timeline-export-row .inline-select {
+  min-width: 110px;
+}
+.timeline-export-row .export-status {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.link-highlight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 200, 255, 0.45);
+  background: rgba(122, 200, 255, 0.12);
+  color: var(--accent-cyan, #7ac8ff);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.link-highlight-chip:hover {
+  background: rgba(122, 200, 255, 0.20);
+}
+.link-highlight-chip[hidden] {
+  display: none;
+}
+
+/* UI-2: link highlight from chat-thread side. */
+.timeline-node.is-link-highlight {
+  outline: 2px solid var(--accent-cyan, #7ac8ff);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.timeline-node.is-link-highlight > .timeline-node-row {
+  background: rgba(122, 200, 255, 0.18);
+}
+.timeline-node.is-link-highlight > .timeline-node-row .timeline-node-title {
+  color: var(--text-primary);
+}
+/* UI-2: scope highlight (lighter, for descendants of clicked node). */
+.timeline-node.is-link-scope > .timeline-node-row {
+  background: rgba(122, 200, 255, 0.06);
 }
