@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Helixent Trace Lens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css?v=trace-lens-workbench-63" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-cluster">
+          <div class="brand">
+            <button id="toggleSidebar" class="ghost-button icon-button sidebar-toggle" type="button" title="Collapse sidebar">☰</button>
+            <div class="brand-mark" aria-hidden="true">
+              <span class="brand-mark-core">H</span>
+              <span class="brand-mark-orbit"></span>
+            </div>
+            <div>
+              <div class="brand-title">Helixent Trace Lens</div>
+              <div class="brand-subtitle">AI coding agent control room</div>
+            </div>
+          </div>
+          <div class="session-summary-card">
+            <span class="session-summary-label">Session</span>
+            <span class="session-summary-value" id="sessionMeta">No session</span>
+          </div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-meta">
+          <div class="path-chip">
+            <span class="path-chip-label">Workspace</span>
+            <span class="path-chip-value" id="workspaceCwd">—</span>
+          </div>
+          <div class="status-pill live-status" id="progressStatus">Idle</div>
+          <button id="openConfig" class="ghost-button mini-button topbar-action" type="button">Model settings</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-rail" aria-hidden="true">
+            <span>TR</span>
+            <span>SK</span>
+            <span>TL</span>
+          </div>
+          <section class="panel sidebar-panel">
+            <div class="panel-heading" data-sidebar-panel-toggle>
+              <span>Traces</span>
+              <button id="refreshTraces" class="ghost-button">Refresh</button>
+            </div>
+            <div class="panel-body">
+              <input id="traceSearch" class="search" placeholder="Search trace files" />
+              <div id="traceList" class="list"></div>
+            </div>
+          </section>
+
+          <section class="panel sidebar-panel">
+            <div class="panel-heading" data-sidebar-panel-toggle>
+              <span>Skills</span>
+              <button id="newSkill" class="ghost-button">New</button>
+            </div>
+            <div class="panel-body">
+              <div id="skillList" class="list compact"></div>
+            </div>
+          </section>
+
+          <section class="panel tools-panel sidebar-panel">
+            <div class="panel-heading" data-sidebar-panel-toggle>
+              <span>Tools</span>
+              <button id="applyTools" class="ghost-button">Apply</button>
+            </div>
+            <div class="panel-body">
+              <input id="toolSearch" class="search" placeholder="Search tools" />
+              <div id="toolList" class="list compact"></div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="center-workbench">
+          <section class="workbench-frame">
+            <div class="workbench-columns">
+              <section class="output-pane output-stage">
+                <div class="pane-title output-toolbar">
+                  <span class="output-title-group">
+                    <span class="eyebrow">Live run</span>
+                    <span class="output-heading">Agent output</span>
+                    <span class="pane-hint">thinking · response · tool_use · tool_result · approvals</span>
+                  </span>
+                  <span class="export-controls">
+                    <button id="togglePackage" class="ghost-button mini-button" data-prompt-toggle-package type="button" title="Show messages and tools used in the next request">Package</button>
+                    <select id="exportRange" class="inline-select export-range" title="Trace export range">
+                      <option value="last-1">Last 1 run</option>
+                      <option value="last-3">Last 3 runs</option>
+                      <option value="last-5">Last 5 runs</option>
+                      <option value="last-10">Last 10 runs</option>
+                      <option value="full">Full Trace</option>
+                      <option value="raw">Raw JSONL</option>
+                    </select>
+                    <button id="clearSession" class="ghost-button mini-button" type="button" title="Clear session messages">Clear</button>
+                    <button id="copyTrace" class="ghost-button mini-button" type="button">Copy</button>
+                    <button id="exportTrace" class="ghost-button mini-button" type="button">Export</button>
+                    <span id="exportStatus" class="export-status" aria-live="polite"></span>
+                  </span>
+                </div>
+                <div id="requestPackagePanel" class="request-package-panel" hidden></div>
+                <div id="modelOutput" class="output-list"></div>
+                <footer id="agentToolsBar" class="agent-tools-bar" hidden></footer>
+              </section>
+
+              <section class="request-pane request-deck">
+                <section class="context-card prompt-panel">
+                  <div id="inputContext" class="context-view empty-state">Create a session or open a trace.</div>
+                </section>
+              </section>
+            </div>
+          </section>
+
+          <form id="composer" class="composer">
+            <div id="composerAttachments" class="composer-attachments" hidden></div>
+            <textarea id="promptInput" list="commandPicker" rows="3" placeholder="Type your message or use / for commands..."></textarea>
+            <datalist id="commandPicker"></datalist>
+            <input id="composerImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+            <label class="secondary-button composer-image-button" for="composerImageInput" title="Attach images">+ Image</label>
+            <button id="abortRun" type="button" class="secondary-button">Abort</button>
+            <button type="submit">Run</button>
+          </form>
+        </section>
+
+        <aside class="timeline-pane">
+          <details class="trace-card run-card" open>
+            <summary class="card-title run-metrics-summary">
+              <span>Run Metrics</span>
+              <span class="run-metrics-toggle" aria-hidden="true"></span>
+            </summary>
+            <div id="runMetrics" class="metrics-grid"></div>
+          </details>
+          <div class="pane-title timeline-title-row">
+            <span>Hook & Tool Timeline</span>
+            <select id="timelineFilter" class="inline-select sr-only">
+              <option value="all">All</option>
+              <option value="hooks">Hooks</option>
+              <option value="model">Model</option>
+              <option value="tools">Tools</option>
+              <option value="human">Human</option>
+              <option value="session">Session</option>
+            </select>
+          </div>
+          <div class="timeline-tabs">
+            <button class="filter-pill active" type="button" data-timeline-filter="all">All</button>
+            <button class="filter-pill" type="button" data-timeline-filter="hooks">Hooks</button>
+            <button class="filter-pill" type="button" data-timeline-filter="model">Model</button>
+            <button class="filter-pill" type="button" data-timeline-filter="tools">Tools</button>
+            <button class="filter-pill" type="button" data-timeline-filter="human">Human</button>
+          </div>
+          <div id="timeline" class="timeline"></div>
+        </aside>
+      </div>
+    </main>
+
+    <dialog id="configDialog" class="modal">
+      <form id="configForm" method="dialog" class="modal-card">
+        <h2>Configure models</h2>
+        <p id="modelConfigSummary">Use the same provider catalog as the TUI. Existing API keys are preserved unless replaced.</p>
+        <section class="config-section">
+          <div class="card-title">Configured models</div>
+          <div id="modelList" class="list compact"></div>
+          <label>
+            Default model
+            <select id="defaultModelInput"></select>
+          </label>
+        </section>
+        <section class="config-section">
+          <div class="card-title">Add or replace model</div>
+        <label>
+          Provider
+          <select id="providerInput"></select>
+        </label>
+        <label>
+          Model name
+          <input id="modelNameInput" placeholder="doubao-seed-2.0-code or deepseek-v3" />
+        </label>
+        <label>
+          Base URL
+          <input id="baseUrlInput" placeholder="https://api.openai.com/v1" />
+        </label>
+        <label>
+          API key
+          <input id="apiKeyInput" type="password" placeholder="Leave blank to keep the existing key" />
+        </label>
+        </section>
+        <div class="modal-actions">
+          <button type="submit">Save models</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="toolDialog" class="modal">
+      <form method="dialog" class="modal-card wide">
+        <h2 id="toolDialogTitle">Tool details</h2>
+        <section class="tool-dialog-section">
+          <h3>Tool description</h3>
+          <p id="toolDialogDescription"></p>
+        </section>
+        <section class="tool-dialog-section">
+          <h3>Parameters schema</h3>
+          <pre id="toolDialogSchema"></pre>
+        </section>
+        <section class="tool-dialog-section">
+          <h3>Example call</h3>
+          <pre id="toolDialogExample"></pre>
+        </section>
+        <div class="modal-actions">
+          <button type="submit">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="skillDialog" class="modal">
+      <form id="skillForm" method="dialog" class="modal-card wide">
+        <h2 id="skillDialogTitle">Skill</h2>
+        <input id="skillSlugInput" type="hidden" />
+        <label>
+          Name
+          <input id="skillNameInput" required />
+        </label>
+        <label>
+          Description
+          <input id="skillDescriptionInput" required />
+        </label>
+        <label>
+          SKILL.md
+          <textarea id="skillContentInput" rows="14"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button id="deleteSkill" type="button" class="danger-button">Delete</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="messageDialog" class="modal">
+      <form method="dialog" class="modal-card wide message-modal-card">
+        <h2 id="messageDialogTitle">Message</h2>
+        <div id="messageDialogBody" class="message-dialog-body"></div>
+        <div class="modal-actions">
+          <button type="submit">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="sentPromptDialog" class="modal">
+      <form method="dialog" class="modal-card wide sent-prompt-modal-card">
+        <div id="sentPromptDialogBody" class="sent-prompt-dialog"></div>
+        <div class="modal-actions">
+          <button type="submit">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="imageLightbox" class="image-lightbox">
+      <button class="image-lightbox-close" type="button" aria-label="Close">×</button>
+      <button class="image-lightbox-prev" type="button" aria-label="Previous">‹</button>
+      <img class="image-lightbox-img" alt="" />
+      <button class="image-lightbox-next" type="button" aria-label="Next">›</button>
+      <div class="image-lightbox-meta"></div>
+    </dialog>
+
+    <script type="module" src="/assets/app.js?v=trace-lens-workbench-63"></script>
+  </body>
+</html>

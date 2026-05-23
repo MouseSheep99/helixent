@@ -1,0 +1,6 @@
+models:
+  - name: ep-20251219114647-d4nsz
+    baseURL: https://ark.cn-beijing.volces.com/api/v3
+    APIKey: d51abf5f-2844-47e0-858d-6fb934bd834e
+    provider: openai
+defaultModel: ep-20251219114647-d4nsz

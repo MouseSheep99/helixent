@@ -1,0 +1,121 @@
+@media (max-width: 1500px) {
+  .output-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .output-title-group {
+    flex-basis: 100%;
+  }
+
+  .export-controls {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1320px) {
+  .workspace {
+    grid-template-columns: 280px minmax(0, 1fr) 320px;
+  }
+
+  .workbench-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .request-deck {
+    border-left: 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .timeline-pane {
+    display: none;
+  }
+
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 920px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .brand-cluster,
+  .topbar-meta {
+    width: 100%;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .path-chip,
+  .session-summary-card {
+    min-width: 0;
+  }
+
+  .prompt-tool-grid,
+  .prompt-diff-summary-grid,
+  .metrics-grid,
+  .diff-pair,
+  .timeline-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .message-card-button {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .message-open {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .timeline-summary-topline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .timeline-badge {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 360px) {
+  .question-option {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 320px) {
+  .message-card-leading {
+    align-items: flex-start;
+  }
+}

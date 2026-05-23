@@ -1,0 +1,62 @@
+.status-pill,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.live-status {
+  min-width: 92px;
+  justify-content: center;
+}
+
+.live-status[data-status*="thinking"],
+.live-status[data-status*="tool"] {
+  border-color: rgba(79, 163, 255, 0.4);
+  background: rgba(79, 163, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.live-status[data-status="replay"] {
+  border-color: rgba(182, 140, 255, 0.4);
+  background: rgba(182, 140, 255, 0.12);
+}
+
+.warning-chip {
+  border-color: rgba(255, 184, 77, 0.34);
+  background: rgba(255, 184, 77, 0.12);
+  color: #ffd79a;
+}
+
+.success-chip {
+  border-color: rgba(99, 216, 141, 0.34);
+  background: rgba(99, 216, 141, 0.12);
+  color: #b8f0cb;
+}
+
+.danger-chip {
+  border-color: rgba(255, 110, 120, 0.34);
+  background: rgba(255, 110, 120, 0.12);
+  color: #ffc1c6;
+}
+
+.subtle-chip {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.status-flash {
+  animation: status-flash-pulse 1.8s ease-out;
+}
+
+@keyframes status-flash-pulse {
+  0% { background-color: rgba(255, 200, 100, 0.25); }
+  100% { background-color: transparent; }
+}

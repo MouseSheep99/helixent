@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Helixent — Design Mockup</title>
+    <style>
+      :root {
+        --bg: #060816;
+        --bg-elevated: rgba(12, 16, 34, 0.88);
+        --bg-panel: rgba(14, 19, 40, 0.82);
+        --bg-card: rgba(18, 24, 48, 0.9);
+        --bg-soft: rgba(255, 255, 255, 0.04);
+        --line: rgba(255, 255, 255, 0.08);
+        --line-strong: rgba(120, 160, 255, 0.28);
+        --text: #eef3ff;
+        --muted: #9aa7c7;
+        --dim: #6f7b98;
+        --blue: #73a7ff;
+        --cyan: #5de4d7;
+        --green: #7ef0a8;
+        --amber: #ffbf69;
+        --purple: #b18cff;
+        --red: #ff7f96;
+        --shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 15% 10%, rgba(115, 167, 255, 0.22), transparent 24%),
+          radial-gradient(circle at 85% 12%, rgba(177, 140, 255, 0.18), transparent 22%),
+          radial-gradient(circle at 50% 100%, rgba(93, 228, 215, 0.08), transparent 30%),
+          linear-gradient(180deg, #050713 0%, #090d1d 45%, #060816 100%);
+        overflow: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+        background-size: 36px 36px;
+        mask-image: radial-gradient(circle at center, black 35%, transparent 90%);
+        opacity: 0.35;
+      }
+
+      .app {
+        position: relative;
+        display: grid;
+        grid-template-rows: 78px 1fr;
+        height: 100vh;
+        padding: 18px;
+        gap: 16px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 18px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(10, 14, 28, 0.72);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: white;
+        background: linear-gradient(135deg, rgba(115,167,255,0.95), rgba(93,228,215,0.75));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 30px rgba(115,167,255,0.28);
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: -0.03em;
+      }
+
+      .sub {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .hero-strip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .pill, .ghost-btn, .tab, .mini-chip {
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.04);
+        color: var(--muted);
+        border-radius: 999px;
+      }
+
+      .pill {
+        padding: 8px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .pill strong { color: var(--text); font-weight: 700; }
+      .pill.live { border-color: rgba(126,240,168,0.28); color: #c8f8d8; background: rgba(126,240,168,0.08); }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .ghost-btn {
+        padding: 10px 14px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .ghost-btn.primary {
+        color: #07101f;
+        background: linear-gradient(135deg, var(--blue), #9bc0ff);
+        border-color: transparent;
+        font-weight: 700;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr) 360px;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--bg-panel);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+        min-height: 0;
+      }
+
+      .sidebar {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .section {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255,255,255,0.025);
+        padding: 14px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--dim);
+      }
+
+      .nav-list, .tool-list, .trace-list, .timeline-list, .todo-list { display: grid; gap: 10px; }
+
+      .nav-item, .trace-item, .tool-item, .timeline-item, .todo-item, .skill-card, .metric, .message-card, .insight-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--bg-card);
+      }
+
+      .nav-item {
+        padding: 12px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .nav-item.active {
+        border-color: var(--line-strong);
+        background: linear-gradient(180deg, rgba(115,167,255,0.12), rgba(255,255,255,0.03));
+      }
+
+      .nav-item span:last-child, .tiny { color: var(--dim); font-size: 12px; }
+
+      .center {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) 132px;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      .main-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .conversation, .inspector {
+        padding: 18px;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .conversation {
+        border-right: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(115,167,255,0.05), transparent 180px);
+      }
+
+      .title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .eyebrow {
+        color: var(--dim);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+
+      h2, h3, h4, p { margin: 0; }
+      h2 { font-size: 20px; letter-spacing: -0.03em; }
+      h3 { font-size: 14px; }
+
+      .stack { display: grid; gap: 14px; }
+
+      .message-card {
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .message-card::after {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: var(--blue);
+      }
+
+      .message-card.thinking::after { background: var(--purple); }
+      .message-card.tool::after { background: var(--amber); }
+      .message-card.answer::after { background: var(--green); }
+      .message-card.context::after { background: var(--cyan); }
+
+      .message-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .role {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .message-body {
+        color: #dfe7fb;
+        line-height: 1.65;
+        font-size: 14px;
+      }
+
+      .code {
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(5, 8, 18, 0.9);
+        border: 1px solid rgba(255,255,255,0.06);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: #cfe0ff;
+        white-space: pre-wrap;
+      }
+
+      .inspector-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .insight-card {
+        padding: 14px;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 12px;
+      }
+
+      .metric .label {
+        color: var(--dim);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric .value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .prompt-editor {
+        display: grid;
+        gap: 10px;
+      }
+
+      .field {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255,255,255,0.025);
+        padding: 12px;
+      }
+
+      .field label {
+        display: block;
+        color: var(--dim);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+      }
+
+      .field .content {
+        color: #dbe5ff;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .tool-pills, .version-row, .composer-actions, .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mini-chip {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .mini-chip.blue { color: #dce8ff; border-color: rgba(115,167,255,0.28); background: rgba(115,167,255,0.1); }
+      .mini-chip.green { color: #d8ffe6; border-color: rgba(126,240,168,0.28); background: rgba(126,240,168,0.08); }
+      .mini-chip.amber { color: #ffe7c2; border-color: rgba(255,191,105,0.28); background: rgba(255,191,105,0.08); }
+      .mini-chip.purple { color: #eadcff; border-color: rgba(177,140,255,0.28); background: rgba(177,140,255,0.08); }
+
+      .composer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 14px;
+        padding: 16px 18px;
+        align-items: center;
+      }
+
+      .composer-box {
+        border: 1px solid var(--line-strong);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(115,167,255,0.08), rgba(255,255,255,0.03));
+        padding: 14px 16px;
+      }
+
+      .composer-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .composer-text {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .rightbar {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr;
+        gap: 14px;
+        padding: 14px;
+        min-height: 0;
+      }
+
+      .action-card {
+        padding: 16px;
+        border: 1px solid rgba(93,228,215,0.18);
+        background: linear-gradient(180deg, rgba(93,228,215,0.08), rgba(255,255,255,0.02));
+        border-radius: 20px;
+      }
+
+      .todo-item, .timeline-item, .trace-item, .tool-item, .skill-card {
+        padding: 12px 14px;
+      }
+
+      .todo-item {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 10px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        margin-top: 6px;
+        background: var(--blue);
+        box-shadow: 0 0 0 6px rgba(115,167,255,0.08);
+      }
+
+      .dot.green { background: var(--green); box-shadow: 0 0 0 6px rgba(126,240,168,0.08); }
+      .dot.amber { background: var(--amber); box-shadow: 0 0 0 6px rgba(255,191,105,0.08); }
+      .dot.purple { background: var(--purple); box-shadow: 0 0 0 6px rgba(177,140,255,0.08); }
+
+      .timeline-item {
+        display: grid;
+        gap: 6px;
+      }
+
+      .timeline-top, .trace-top, .tool-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .muted { color: var(--muted); }
+      .dim { color: var(--dim); }
+
+      .spark {
+        height: 54px;
+        border-radius: 16px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+          radial-gradient(circle at 10% 80%, rgba(115,167,255,0.35), transparent 28%),
+          radial-gradient(circle at 55% 35%, rgba(93,228,215,0.22), transparent 24%),
+          radial-gradient(circle at 85% 20%, rgba(177,140,255,0.28), transparent 22%),
+          rgba(8, 12, 24, 0.9);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .spark svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .footer-note {
+        position: absolute;
+        right: 28px;
+        bottom: 22px;
+        color: rgba(255,255,255,0.28);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 1400px) {
+        .workspace { grid-template-columns: 240px minmax(0, 1fr) 320px; }
+      }
+
+      @media (max-width: 1180px) {
+        .workspace { grid-template-columns: 1fr; }
+        .sidebar, .rightbar { display: none; }
+        .main-stage { grid-template-columns: 1fr; }
+        .conversation { border-right: 0; border-bottom: 1px solid var(--line); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">H</div>
+          <div>
+            <h1>Helixent Control Room</h1>
+            <div class="sub">Redesigned AI coding agent workspace</div>
+          </div>
+        </div>
+
+        <div class="hero-strip">
+          <div class="pill"><strong>Workspace</strong> · /Users/bytedance/Documents/Codex/helixent</div>
+          <div class="pill"><strong>Model</strong> · claude-sonnet-4</div>
+          <div class="pill live"><strong>Live</strong> · Tool execution in progress</div>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost-btn">Prompt Versions</button>
+          <button class="ghost-btn">Trace Replay</button>
+          <button class="ghost-btn primary">New Session</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="panel sidebar">
+          <div class="section">
+            <div class="section-head"><span>Navigation</span><span>⌘1–⌘5</span></div>
+            <div class="nav-list">
+              <div class="nav-item active"><span>Live Run</span><span>Now</span></div>
+              <div class="nav-item"><span>Prompt Lab</span><span>3 versions</span></div>
+              <div class="nav-item"><span>Trace Library</span><span>128</span></div>
+              <div class="nav-item"><span>Skills</span><span>12</span></div>
+              <div class="nav-item"><span>Tool Access</span><span>14 enabled</span></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><span>Skills</span><span>Suggested</span></div>
+            <div class="nav-list">
+              <div class="skill-card">
+                <strong>/frontend-design</strong>
+                <div class="tiny">Generate polished UI concepts and implementation-ready layouts.</div>
+              </div>
+              <div class="skill-card">
+                <strong>/bits-code-guard</strong>
+                <div class="tiny">Static review for risky diffs, logic flaws, and hidden regressions.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" style="min-height:0; overflow:auto;">
+            <div class="section-head"><span>Tool Inventory</span><span>Scoped</span></div>
+            <div class="tool-list">
+              <div class="tool-item">
+                <div class="tool-top"><strong>read_file</strong><span class="mini-chip blue">enabled</span></div>
+                <div class="tiny">Inspect source, prompts, traces, and screenshots.</div>
+              </div>
+              <div class="tool-item">
+                <div class="tool-top"><strong>bash</strong><span class="mini-chip amber">approval</span></div>
+                <div class="tiny">Run commands with explicit human review for safety.</div>
+              </div>
+              <div class="tool-item">
+                <div class="tool-top"><strong>todo_write</strong><span class="mini-chip green">live</span></div>
+                <div class="tiny">Track execution plan and surface progress in the UI.</div>
+              </div>
+              <div class="tool-item">
+                <div class="tool-top"><strong>grep_search</strong><span class="mini-chip blue">enabled</span></div>
+                <div class="tiny">Search code and traces with structured filters.</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="center">
+          <section class="panel main-stage">
+            <div class="conversation">
+              <div class="title-row">
+                <div>
+                  <div class="eyebrow">Live orchestration</div>
+                  <h2>Conversation + execution stream</h2>
+                </div>
+                <div class="status-row">
+                  <span class="mini-chip purple">Thinking</span>
+                  <span class="mini-chip amber">1 approval pending</span>
+                  <span class="mini-chip green">4 tasks tracked</span>
+                </div>
+              </div>
+
+              <div class="stack">
+                <article class="message-card context">
+                  <div class="message-meta">
+                    <span class="role">Project context</span>
+                    <span class="mini-chip">AGENTS.md loaded</span>
+                  </div>
+                  <div class="message-body">Architecture guidance, Bun conventions, and skill-loading behavior are injected automatically before the run begins.</div>
+                </article>
+
+                <article class="message-card">
+                  <div class="message-meta">
+                    <span class="role">User request</span>
+                    <span class="dim">09:41:12</span>
+                  </div>
+                  <div class="message-body">Redesign the web UI into a more modern control room for an AI coding agent. Preserve traces, prompt versions, tools, skills, approvals, and task tracking.</div>
+                </article>
+
+                <article class="message-card thinking">
+                  <div class="message-meta">
+                    <span class="role">Model thinking</span>
+                    <span class="mini-chip purple">internal</span>
+                  </div>
+                  <div class="message-body">I should inspect the current web layer, identify the core entities, then propose a layout that makes session state, prompt assembly, and human-in-the-loop actions more legible.</div>
+                </article>
+
+                <article class="message-card tool">
+                  <div class="message-meta">
+                    <span class="role">Tool request · read_file</span>
+                    <span class="mini-chip amber">tool call</span>
+                  </div>
+                  <div class="message-body">Reading <span class="muted">server.ts</span>, <span class="muted">types.ts</span>, <span class="muted">trace.ts</span>, and public UI assets to map the current control surface.</div>
+                  <div class="code">{ "paths": ["web/server.ts", "web/types.ts", "web/public/view.js"] }</div>
+                </article>
+
+                <article class="message-card answer">
+                  <div class="message-meta">
+                    <span class="role">Assistant response</span>
+                    <span class="mini-chip green">ready</span>
+                  </div>
+                  <div class="message-body">I designed a control-room style interface with three persistent zones: operational navigation, a live execution canvas, and a decision sidebar for approvals, metrics, and timeline replay. Prompt versions and tool visibility are elevated into first-class controls instead of secondary utilities.</div>
+                </article>
+              </div>
+            </div>
+
+            <aside class="inspector">
+              <div class="title-row">
+                <div>
+                  <div class="eyebrow">Prompt lab</div>
+                  <h2>Request inspector</h2>
+                </div>
+                <span class="mini-chip blue">Version 3 active</span>
+              </div>
+
+              <div class="inspector-grid">
+                <div class="insight-card">
+                  <div class="section-head"><span>Prompt assembly</span><span>Runtime vs version</span></div>
+                  <div class="metrics-grid">
+                    <div class="metric"><div class="label">Visible tools</div><div class="value">14</div></div>
+                    <div class="metric"><div class="label">Messages</div><div class="value">9</div></div>
+                    <div class="metric"><div class="label">Forced skill</div><div class="value" style="font-size:16px;">/frontend-design</div></div>
+                    <div class="metric"><div class="label">Prompt source</div><div class="value" style="font-size:16px;">Saved version</div></div>
+                  </div>
+                </div>
+
+                <div class="insight-card prompt-editor">
+                  <div class="field">
+                    <label>System prompt</label>
+                    <div class="content">You are an AI coding agent with tool access, trace instrumentation, prompt versioning, and human approval workflows. Prefer structured progress updates and preserve session safety.</div>
+                  </div>
+                  <div class="field">
+                    <label>Request package</label>
+                    <div class="content">Includes runtime messages, selected tools, requested skill, and version metadata. Editable before activation, replayable after save.</div>
+                  </div>
+                  <div class="field">
+                    <label>Tool subset</label>
+                    <div class="tool-pills">
+                      <span class="mini-chip blue">read_file</span>
+                      <span class="mini-chip blue">grep_search</span>
+                      <span class="mini-chip amber">bash</span>
+                      <span class="mini-chip green">todo_write</span>
+                      <span class="mini-chip purple">ask_user_question</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="insight-card">
+                  <div class="section-head"><span>Prompt diff</span><span>Compared to runtime</span></div>
+                  <div class="todo-list">
+                    <div class="todo-item"><span class="dot green"></span><div><strong>System prompt changed</strong><div class="tiny">Added explicit UI design and trace-visibility guidance.</div></div></div>
+                    <div class="todo-item"><span class="dot amber"></span><div><strong>Tools narrowed</strong><div class="tiny">Removed write-capable tools from the saved version baseline.</div></div></div>
+                    <div class="todo-item"><span class="dot purple"></span><div><strong>Skill forced</strong><div class="tiny">/frontend-design pinned for the next run.</div></div></div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </section>
+
+          <section class="panel composer">
+            <div class="composer-box">
+              <div class="composer-title">Ask Helixent</div>
+              <div class="composer-text">Describe a bug, refactor, architecture task, or UI redesign. The redesigned composer emphasizes intent, context packages, and safe execution state.</div>
+            </div>
+            <div class="composer-actions">
+              <button class="ghost-btn">Attach Context</button>
+              <button class="ghost-btn">Abort</button>
+              <button class="ghost-btn primary">Run Agent</button>
+            </div>
+          </section>
+        </main>
+
+        <aside class="panel rightbar">
+          <div class="action-card">
+            <div class="eyebrow">Human in the loop</div>
+            <h3>Approval required</h3>
+            <p class="muted" style="margin-top:8px; line-height:1.6;">The agent wants to execute <strong style="color:var(--text)">bash</strong> to validate the generated prototype. Review, allow once, or always allow for this project.</p>
+            <div class="composer-actions" style="margin-top:14px;">
+              <span class="mini-chip green">Allow once</span>
+              <span class="mini-chip blue">Always allow</span>
+              <span class="mini-chip amber">Deny</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><span>Run metrics</span><span>Latest</span></div>
+            <div class="metrics-grid">
+              <div class="metric"><div class="label">Input tokens</div><div class="value">8.4k</div></div>
+              <div class="metric"><div class="label">Output tokens</div><div class="value">2.1k</div></div>
+              <div class="metric"><div class="label">Tool calls</div><div class="value">6</div></div>
+              <div class="metric"><div class="label">Hooks</div><div class="value">18</div></div>
+            </div>
+            <div class="spark" style="margin-top:12px;">
+              <svg viewBox="0 0 300 54" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0 42 C25 40, 35 18, 58 20 S95 48, 122 34 S160 8, 188 18 S230 46, 255 28 S285 12, 300 16" fill="none" stroke="rgba(115,167,255,0.95)" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M0 46 C30 44, 48 30, 72 32 S118 50, 146 38 S188 18, 214 24 S252 42, 300 30" fill="none" stroke="rgba(93,228,215,0.75)" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><span>Task stream</span><span>todo_write</span></div>
+            <div class="todo-list">
+              <div class="todo-item"><span class="dot green"></span><div><strong>Inspect web layer files</strong><div class="tiny">Completed after reading server, types, tools, skills, trace, prompt versions, and public assets.</div></div></div>
+              <div class="todo-item"><span class="dot amber"></span><div><strong>Design static HTML mockup</strong><div class="tiny">In progress — synthesizing a more premium dark UI.</div></div></div>
+              <div class="todo-item"><span class="dot"></span><div><strong>Save mockup file</strong><div class="tiny">Pending write to public/design-mockup.html.</div></div></div>
+            </div>
+          </div>
+
+          <div class="section" style="min-height:0; overflow:auto;">
+            <div class="section-head"><span>Hook & tool timeline</span><span>Replayable</span></div>
+            <div class="timeline-list">
+              <div class="timeline-item">
+                <div class="timeline-top"><strong>beforeModel</strong><span class="mini-chip blue">hook</span></div>
+                <div class="tiny">Prompt snapshot assembled with active version and filtered tools.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-top"><strong>input_context</strong><span class="mini-chip purple">model</span></div>
+                <div class="tiny">Captured prompt, messages, tools, requested skill, and version metadata.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-top"><strong>tool_execution_started</strong><span class="mini-chip amber">bash</span></div>
+                <div class="tiny">Protected tool invocation emitted to trace and UI stream.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-top"><strong>approval_requested</strong><span class="mini-chip green">human</span></div>
+                <div class="tiny">Approval manager paused execution and surfaced a decision card.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-top"><strong>todo_update</strong><span class="mini-chip blue">tasks</span></div>
+                <div class="tiny">Latest todo snapshot synchronized into the right sidebar.</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <div class="footer-note">Static visual prototype · no backend wiring</div>
+    </div>
+
+    <script>
+      const chips = document.querySelectorAll('.mini-chip, .pill.live, .ghost-btn.primary');
+      let pulse = 0;
+      setInterval(() => {
+        pulse += 1;
+        chips.forEach((el, index) => {
+          const offset = Math.sin((pulse + index * 6) / 12) * 6;
+          el.style.boxShadow = `0 0 ${10 + Math.abs(offset)}px rgba(115,167,255,0.12)`;
+        });
+      }, 120);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,208 @@
+.timeline {
+  flex: 1;
+  min-height: 0;
+}
+
+.timeline-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 6px;
+}
+
+.timeline-node {
+  position: relative;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+
+.timeline-node summary {
+  list-style: none;
+}
+
+.timeline-node summary::-webkit-details-marker {
+  display: none;
+}
+
+.timeline-node-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 8px 4px calc(4px + (var(--depth, 0) * 18px));
+  border-radius: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.timeline-node-row:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.timeline-tree-line {
+  position: relative;
+  width: 22px;
+  height: 100%;
+  min-height: 24px;
+}
+
+.timeline-tree-line::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: 10px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.timeline-tree-line::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 12px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.timeline-node-row[style*="--depth: 0"] .timeline-tree-line::before {
+  top: 50%;
+}
+
+.timeline-type-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+}
+
+.timeline-type-chip.run {
+  border-color: rgba(79, 163, 255, 0.32);
+  color: var(--accent-primary-strong);
+  background: rgba(79, 163, 255, 0.1);
+}
+
+.timeline-type-chip.agent {
+  border-color: rgba(182, 140, 255, 0.32);
+  color: var(--accent-purple);
+  background: rgba(182, 140, 255, 0.1);
+}
+
+.timeline-type-chip.step,
+.timeline-type-chip.skill {
+  border-color: rgba(53, 214, 208, 0.32);
+  color: var(--accent-cyan);
+  background: rgba(53, 214, 208, 0.09);
+}
+
+.timeline-type-chip.prompt,
+.timeline-type-chip.memory {
+  border-color: rgba(182, 140, 255, 0.32);
+  color: var(--accent-purple);
+  background: rgba(182, 140, 255, 0.09);
+}
+
+.timeline-type-chip.model,
+.timeline-type-chip.todo {
+  border-color: rgba(99, 216, 141, 0.32);
+  color: var(--accent-green);
+  background: rgba(99, 216, 141, 0.09);
+}
+
+.timeline-type-chip.tool,
+.timeline-type-chip.mcp {
+  border-color: rgba(255, 184, 77, 0.36);
+  color: var(--accent-amber);
+  background: rgba(255, 184, 77, 0.1);
+}
+
+.timeline-type-chip.human,
+.timeline-type-chip.error {
+  border-color: rgba(255, 110, 120, 0.36);
+  color: var(--accent-red);
+  background: rgba(255, 110, 120, 0.1);
+}
+
+.timeline-type-chip.session {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: var(--text-tertiary);
+}
+
+.timeline-node-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.timeline-node-meta {
+  justify-self: end;
+  overflow: hidden;
+  max-width: 150px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.timeline-graph-children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.timeline-event-node .timeline-node-row {
+  min-height: 30px;
+  color: var(--text-secondary);
+}
+
+.timeline-event-node.error > .timeline-node-row,
+.timeline-event-node .timeline-type-chip.error {
+  color: var(--accent-red);
+}
+
+.timeline-graph-detail {
+  margin: 2px 8px 8px calc(34px + (var(--depth, 0) * 18px));
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.timeline-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.filter-pill {
+  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  padding: 8px 9px;
+}
+
+.filter-pill.active {
+  border-color: rgba(79, 163, 255, 0.8);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}

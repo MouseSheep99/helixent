@@ -1,0 +1,135 @@
+.diff-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.diff-row {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(5, 12, 19, 0.32);
+}
+
+.diff-row-title {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.diff-summary,
+.diff-equal,
+.prompt-diff-source,
+.metric-label,
+.task-summary {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.diff-block,
+pre {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 14px;
+  background: var(--bg-code);
+  color: #dbe7ff;
+  line-height: 1.55;
+  font-size: 12px;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.diff-line {
+  display: block;
+  padding: 0 4px;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+.diff-line.diff-add {
+  color: var(--accent-green);
+  background: rgba(99, 216, 141, 0.08);
+}
+
+.diff-line.diff-del {
+  color: var(--accent-red);
+  background: rgba(255, 110, 120, 0.08);
+}
+
+.diff-line.diff-ctx {
+  color: var(--text-tertiary);
+}
+
+.diff-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.diff-side {
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.diff-side-label {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.diff-side pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.diff-tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.prompt-diff-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.prompt-diff-summary-grid,
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.prompt-diff-summary-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.prompt-diff-summary-item.changed {
+  border-color: rgba(255, 184, 77, 0.5);
+  background: rgba(255, 184, 77, 0.08);
+}
+
+.prompt-diff-summary-item span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.prompt-diff-summary-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

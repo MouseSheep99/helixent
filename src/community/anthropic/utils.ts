@@ -2,6 +2,25 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 import type { AssistantMessage, Message, TokenUsage, Tool } from "@/foundation";
 
+type AnthropicImageMediaType = "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+
+const IMAGE_DATA_URL_RE = /^data:(image\/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/=]+)$/;
+
+/**
+ * Parses an `image_url.url` of the form `data:image/<png|jpeg|gif|webp>;base64,<b64>`
+ * into the (mediaType, raw base64 payload) pair Anthropic expects for `source.type=base64`.
+ *
+ * Returns `null` for any non-matching input (http/https URL, unsupported mime, malformed
+ * base64 alphabet, etc.) so the caller can fall back to the `source.type=url` branch.
+ */
+export function parseImageDataUrl(
+  url: string,
+): { mediaType: AnthropicImageMediaType; data: string } | null {
+  const match = IMAGE_DATA_URL_RE.exec(url);
+  if (!match) return null;
+  return { mediaType: match[1] as AnthropicImageMediaType, data: match[2]! };
+}
+
 /**
  * Extracts the system prompt from helixent messages.
  * Anthropic takes the system prompt as a separate top-level parameter
@@ -44,15 +63,28 @@ export function convertToAnthropicMessages(
         if (part.type === "text") {
           content.push({ type: "text", text: part.text });
         } else if (part.type === "image_url") {
-          // Anthropic uses base64 or URL-based image sources.
-          // For URL-based images, we use the url type.
-          content.push({
-            type: "image",
-            source: {
-              type: "url",
-              url: part.image_url.url,
-            },
-          });
+          // Anthropic accepts either base64 sources (with media_type) or http/https url sources.
+          // Inline `data:image/<mime>;base64,<payload>` URLs are rejected by the API as
+          // url sources, so we transparently convert them to base64 sources here.
+          const parsed = parseImageDataUrl(part.image_url.url);
+          if (parsed) {
+            content.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: parsed.mediaType,
+                data: parsed.data,
+              },
+            });
+          } else {
+            content.push({
+              type: "image",
+              source: {
+                type: "url",
+                url: part.image_url.url,
+              },
+            });
+          }
         }
       }
       result.push({ role: "user", content });

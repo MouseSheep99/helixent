@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Helixent Trace Lens — Faithful Redesign Mockup</title>
+    <style>
+      :root {
+        --bg: #060914;
+        --bg-2: #0a1020;
+        --panel: rgba(13, 19, 36, 0.88);
+        --panel-2: rgba(16, 23, 43, 0.92);
+        --card: rgba(20, 28, 52, 0.9);
+        --card-soft: rgba(255, 255, 255, 0.035);
+        --line: rgba(255, 255, 255, 0.08);
+        --line-strong: rgba(110, 164, 255, 0.28);
+        --text: #eef4ff;
+        --muted: #a7b4d1;
+        --dim: #73819f;
+        --blue: #6ea4ff;
+        --blue-2: #9bc0ff;
+        --cyan: #4fe0d4;
+        --green: #6fe39a;
+        --amber: #ffbf66;
+        --purple: #b48cff;
+        --red: #ff7f95;
+        --shadow-lg: 0 28px 80px rgba(0, 0, 0, 0.42);
+        --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
+        --radius-xl: 26px;
+        --radius-lg: 20px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 10%, rgba(110,164,255,0.18), transparent 24%),
+          radial-gradient(circle at 88% 12%, rgba(180,140,255,0.14), transparent 22%),
+          radial-gradient(circle at 50% 100%, rgba(79,224,212,0.08), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+        overflow: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: radial-gradient(circle at center, black 35%, transparent 88%);
+        opacity: 0.45;
+      }
+
+      button, input, select, textarea { font: inherit; }
+      button {
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 10px 14px;
+        cursor: pointer;
+        color: #07101f;
+        background: linear-gradient(180deg, var(--blue-2), var(--blue));
+        font-weight: 700;
+        transition: 140ms ease;
+      }
+      button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(110,164,255,0.18); }
+      .ghost, .secondary, .filter-pill, .chip, .status-pill {
+        background: rgba(255,255,255,0.04);
+        color: var(--muted);
+        border: 1px solid var(--line);
+        box-shadow: none;
+      }
+      .ghost:hover, .secondary:hover, .filter-pill:hover { color: var(--text); border-color: var(--line-strong); }
+      .danger { background: rgba(255,127,149,0.08); color: #ffc2cf; border-color: rgba(255,127,149,0.24); }
+      .mini { padding: 8px 10px; font-size: 12px; }
+
+      input, select, textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(7, 12, 24, 0.82);
+        color: var(--text);
+        padding: 10px 12px;
+        outline: none;
+      }
+      input:focus, select:focus, textarea:focus {
+        border-color: var(--line-strong);
+        box-shadow: 0 0 0 4px rgba(110,164,255,0.12);
+      }
+      textarea { resize: none; }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        height: 100vh;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 18px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(10, 15, 28, 0.76);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow-lg);
+      }
+      .brand-cluster, .brand, .topbar-meta, .path-chip, .session-summary-card { display: flex; align-items: center; }
+      .brand-cluster { gap: 14px; min-width: 0; }
+      .brand { gap: 12px; min-width: 0; }
+      .brand-mark {
+        width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
+        background: linear-gradient(135deg, rgba(110,164,255,0.95), rgba(79,224,212,0.72));
+        color: white; font-weight: 800; letter-spacing: -0.04em;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 28px rgba(110,164,255,0.24);
+      }
+      .brand-title { font-size: 16px; font-weight: 800; letter-spacing: -0.03em; }
+      .brand-subtitle, .eyebrow, .tiny, .list-item-detail, .output-subtitle, .timeline-meta, .muted, .empty-state, .modal-copy {
+        color: var(--muted);
+      }
+      .brand-subtitle, .tiny, .list-item-detail, .output-subtitle, .timeline-meta, .modal-copy { font-size: 12px; }
+      .eyebrow {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); font-weight: 700;
+      }
+      .session-summary-card, .path-chip {
+        gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.03);
+      }
+      .session-summary-card { min-width: 240px; }
+      .path-chip { min-width: 280px; max-width: 460px; }
+      .session-summary-copy, .path-chip-copy { display: grid; gap: 2px; min-width: 0; }
+      .session-summary-value, .path-chip-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+      .topbar-spacer { flex: 1; }
+      .topbar-meta { gap: 12px; min-width: 0; }
+      .status-pill, .chip {
+        display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+      }
+      .status-pill.live { color: #d8ffe6; border-color: rgba(111,227,154,0.28); background: rgba(111,227,154,0.08); }
+      .chip.blue { color: #dce8ff; border-color: rgba(110,164,255,0.24); background: rgba(110,164,255,0.08); }
+      .chip.green { color: #d8ffe6; border-color: rgba(111,227,154,0.24); background: rgba(111,227,154,0.08); }
+      .chip.amber { color: #ffe8c7; border-color: rgba(255,191,102,0.24); background: rgba(255,191,102,0.08); }
+      .chip.purple { color: #eadcff; border-color: rgba(180,140,255,0.24); background: rgba(180,140,255,0.08); }
+      .chip.red { color: #ffd0d8; border-color: rgba(255,127,149,0.24); background: rgba(255,127,149,0.08); }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr) 360px;
+        gap: 14px;
+        min-height: 0;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow-md);
+        min-height: 0;
+      }
+
+      .sidebar {
+        display: flex; flex-direction: column; overflow: hidden;
+      }
+      .sidebar-rail {
+        display: none; align-items: center; justify-content: center; gap: 18px; writing-mode: vertical-rl; padding: 18px 0; color: var(--muted); font-size: 11px; letter-spacing: 0.08em;
+      }
+      .sidebar-panel {
+        padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; min-height: 0;
+      }
+      .sidebar-panel:last-child { border-bottom: 0; }
+      .panel-heading, .pane-title, .card-title {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); font-weight: 800;
+      }
+      .panel-body, .list, .output-list, .timeline, .context-view, .task-list { min-height: 0; overflow: auto; }
+      .list { display: flex; flex-direction: column; gap: 10px; }
+      .list-item, .trace-card, .output-card, .timeline-item, .metric-card, .message-card, .tool-group {
+        border: 1px solid var(--line); border-radius: 16px; background: var(--card);
+      }
+      .list-item {
+        padding: 12px; display: grid; gap: 6px;
+      }
+      .trace-item, .skill-item, .tool-row, .model-row, .prompt-version-item {
+        display: grid; gap: 8px; align-items: start;
+      }
+      .trace-item { grid-template-columns: minmax(0, 1fr) auto; }
+      .skill-item, .tool-row, .model-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+      .prompt-version-item { grid-template-columns: minmax(0, 1fr) auto; }
+      .trace-main, .skill-main, .prompt-version-main, .output-card-button, .message-card-button {
+        border: 0; background: transparent; color: inherit; padding: 0; text-align: left; box-shadow: none;
+      }
+      .list-item-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; }
+      .search { margin-bottom: 2px; }
+
+      .tool-group summary, .request-package summary, .prompt-tools-details summary, .prompt-version-menu summary, .prompt-diff-details summary, .prompt-inspect summary {
+        list-style: none; cursor: pointer;
+      }
+      .tool-group summary, .request-package summary, .prompt-tools-details summary, .prompt-diff-details summary, .prompt-inspect summary {
+        padding: 10px 12px; color: var(--muted);
+      }
+      .tool-group summary { display: flex; justify-content: space-between; align-items: center; }
+      .tool-group .tool-row { border: 0; border-top: 1px solid rgba(255,255,255,0.04); border-radius: 0; padding: 12px; }
+      .tool-toggle, .question-option, .prompt-tool-toggle { display: flex; gap: 8px; align-items: flex-start; }
+      .tool-toggle input, .question-option input, .prompt-tool-toggle input { width: auto; margin-top: 3px; }
+
+      .center-workbench {
+        display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 14px; min-height: 0;
+      }
+      .workbench-frame {
+        overflow: hidden;
+      }
+      .workbench-columns {
+        display: grid; grid-template-columns: minmax(520px, 1.35fr) minmax(340px, 0.9fr); min-height: 0;
+      }
+      .output-stage, .request-deck {
+        display: flex; flex-direction: column; gap: 14px; padding: 18px; min-height: 0;
+      }
+      .request-deck { border-left: 1px solid var(--line); background: rgba(255,255,255,0.015); }
+      .output-heading { display: block; color: var(--text); font-size: 18px; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+      .pane-hint { color: var(--dim); font-size: 12px; text-transform: none; letter-spacing: 0; }
+      .output-toolbar { align-items: flex-start; }
+      .output-title-group { display: grid; gap: 4px; }
+      .export-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+      .export-status { color: var(--green); font-size: 11px; font-weight: 700; min-width: 54px; }
+
+      .output-list { flex: 1; padding-right: 4px; }
+      .output-stack, .timeline-stack, .metrics-stack, .question-stack, .task-list, .message-stack { display: flex; flex-direction: column; gap: 12px; }
+      .output-card, .message-card, .trace-card, .timeline-item, .metric-card { padding: 14px; box-shadow: var(--shadow-md); }
+      .output-card { position: relative; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)), var(--card); }
+      .output-card::before, .message-card::before {
+        content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: 16px 0 0 16px; background: var(--blue);
+      }
+      .output-card.thinking::before { background: var(--purple); }
+      .output-card.text::before { background: var(--green); }
+      .output-card.tool_use::before { background: var(--amber); }
+      .output-card.tool_result::before { background: var(--blue); }
+      .output-card.human_action::before { background: var(--cyan); }
+      .output-card.error::before { background: var(--red); }
+      .message-card.user::before { background: var(--blue); }
+      .message-card.assistant::before { background: var(--green); }
+      .message-card.tool::before { background: var(--amber); }
+      .message-card.project-context::before { background: var(--cyan); }
+      .output-card-header, .message-card-button, .timeline-summary-topline, .timeline-item summary, .message-card-leading, .composer-leading, .prompt-toolbar, .prompt-meta-line, .request-package summary, .timeline-tabs {
+        display: flex;
+      }
+      .output-card-header, .timeline-summary-topline, .prompt-toolbar, .prompt-meta-line, .request-package summary {
+        justify-content: space-between; align-items: flex-start; gap: 12px;
+      }
+      .output-card-header { margin-bottom: 12px; }
+      .block-label, .role-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
+      .plain-text { white-space: pre-wrap; line-height: 1.65; font-size: 14px; color: #dfe7fb; }
+      pre {
+        margin: 0; padding: 12px; border-radius: 14px; background: rgba(5, 9, 18, 0.92); border: 1px solid rgba(255,255,255,0.05); overflow: auto; color: #dbe7ff; font-size: 12px; line-height: 1.55; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .choice-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .human-action-copy { color: var(--muted); font-size: 12px; margin-bottom: 12px; line-height: 1.55; }
+      .question-card { display: grid; gap: 10px; }
+      .question-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+      .question-options { display: grid; gap: 8px; }
+      .question-option { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,0.02); }
+
+      .prompt-panel {
+        border: 1px solid var(--line); border-radius: 18px; background: rgba(8, 14, 26, 0.42); padding: 16px; overflow: auto;
+      }
+      .prompt-playground, .prompt-editor, .request-package-body, .prompt-diff-panel, .diff-grid, .diff-row, .prompt-toolbar-main, .prompt-version-list, .action-center-card, .task-copy {
+        display: flex; flex-direction: column;
+      }
+      .prompt-playground, .prompt-editor, .request-package-body, .prompt-diff-panel, .diff-grid { gap: 12px; }
+      .prompt-toolbar { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+      .prompt-toolbar-main { gap: 4px; }
+      .prompt-toolbar-main strong { font-size: 16px; letter-spacing: -0.02em; }
+      .prompt-toolbar-actions, .prompt-validation, .prompt-tool-grid, .diff-pair, .prompt-diff-summary-grid, .metrics-grid, .composer-tools, .top-actions { display: flex; gap: 8px; }
+      .prompt-toolbar-actions, .prompt-validation, .composer-tools { flex-wrap: wrap; }
+      .prompt-version-menu summary {
+        border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--blue-2); background: rgba(255,255,255,0.03);
+      }
+      .prompt-meta-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+      .inline-control { display: flex; gap: 6px; }
+      .prompt-editor label, .modal-card label {
+        display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      }
+      .system-prompt-field textarea { min-height: 260px; }
+      .request-package, .prompt-tools-details, .prompt-diff-details, .prompt-inspect {
+        border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.02); overflow: hidden;
+      }
+      .request-package-body { padding: 12px; border-top: 1px solid var(--line); }
+      .request-package-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+      .prompt-tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 180px; overflow: auto; padding: 12px; border-top: 1px solid var(--line); }
+      .prompt-tool-toggle { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: rgba(255,255,255,0.02); color: var(--text); }
+      .prompt-diff-summary-grid, .metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .prompt-diff-summary-item, .metric-card {
+        border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: rgba(255,255,255,0.02);
+      }
+      .prompt-diff-summary-item.changed { border-color: rgba(255,191,102,0.4); background: rgba(255,191,102,0.08); }
+      .prompt-diff-summary-item span, .metric-label, .task-summary { color: var(--muted); font-size: 11px; }
+      .metric-value { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; margin-top: 6px; }
+      .diff-row { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: rgba(5,12,19,0.32); gap: 6px; }
+      .diff-row-title { font-weight: 700; color: var(--muted); font-size: 12px; }
+      .diff-summary, .diff-equal, .prompt-diff-source { color: var(--muted); font-size: 12px; }
+      .diff-line { display: block; padding: 0 4px; white-space: pre-wrap; font-size: 12px; }
+      .diff-add { color: var(--green); background: rgba(111,227,154,0.08); }
+      .diff-del { color: var(--red); background: rgba(255,127,149,0.08); }
+      .diff-ctx { color: var(--dim); }
+      .diff-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .diff-side { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: rgba(0,0,0,0.18); }
+      .diff-side-label { display: block; color: var(--dim); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+      .diff-tool-list { display: flex; flex-wrap: wrap; gap: 4px; }
+
+      .composer {
+        display: grid; grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr) auto auto auto; gap: 10px; align-items: stretch; padding: 14px; background: rgba(8,18,28,0.9);
+      }
+      .composer-leading { align-items: flex-start; gap: 12px; padding: 6px 4px; }
+      .composer-prefix {
+        width: 34px; height: 34px; border-radius: 12px; display: inline-grid; place-items: center; background: rgba(110,164,255,0.12); color: var(--blue-2); font-weight: 900;
+      }
+      .composer-title { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+      .composer-subtitle { color: var(--muted); font-size: 12px; }
+      .composer textarea { min-height: 96px; }
+      .command-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+      .timeline-pane {
+        display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; padding: 2px;
+      }
+      .action-center, .metrics-stack, .timeline { min-height: 0; overflow: auto; }
+      .action-center-card { gap: 6px; }
+      .action-center-title { font-size: 14px; font-weight: 800; }
+      .action-center-copy { color: var(--text); font-size: 13px; }
+      .approval-state .action-center-title { color: #ffd79a; }
+      .question-state .action-center-title { color: #e2d0ff; }
+      .replay-state .action-center-title { color: #d7c8ff; }
+      .idle-state .action-center-title { color: var(--text); }
+      .task-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; font-size: 13px; }
+      .task-icon { color: var(--blue); }
+      .task-row.completed .task-icon { color: var(--green); }
+      .task-row.pending .task-icon { color: var(--dim); }
+      .task-copy span { color: var(--muted); font-size: 12px; }
+      .timeline-tabs { gap: 8px; }
+      .filter-pill.active { border-color: rgba(110,164,255,0.8); background: rgba(110,164,255,0.12); color: var(--text); }
+      .timeline-item { padding: 10px 12px; border-left: 3px solid var(--line); margin-left: 8px; }
+      .timeline-item.hook_triggered, .timeline-item.agent_progress { border-left-color: var(--blue); }
+      .timeline-item.tool_call_detected, .timeline-item.tool_execution_started { border-left-color: var(--amber); }
+      .timeline-item.tool_execution_completed, .timeline-item.todo_update { border-left-color: var(--green); }
+      .timeline-item.skill_loaded { border-left-color: var(--cyan); }
+      .timeline-item.token_usage { border-left-color: var(--purple); }
+      .timeline-item.approval_requested, .timeline-item.question_requested { border-left-color: var(--cyan); }
+      .timeline-item.error { border-left-color: var(--red); }
+      .timeline-item summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; cursor: pointer; }
+      .timeline-icon {
+        width: 24px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; background: rgba(110,164,255,0.12); color: var(--blue-2); font-size: 12px; font-weight: 800;
+      }
+      .timeline-summary-copy { display: grid; gap: 2px; }
+      .timeline-title { font-weight: 700; font-size: 13px; }
+      .timeline-badge { border: 1px solid rgba(110,164,255,0.22); border-radius: 999px; padding: 3px 8px; color: var(--blue-2); background: rgba(110,164,255,0.08); font-size: 11px; font-weight: 700; }
+
+      .modal-layer {
+        position: fixed; inset: 0; pointer-events: none;
+      }
+      .modal {
+        position: absolute; pointer-events: auto; border: 1px solid var(--line); border-radius: 22px; background: var(--panel-2); box-shadow: var(--shadow-lg); padding: 20px; display: none; flex-direction: column; gap: 14px;
+      }
+      .modal.show { display: flex; }
+      .modal h2 { margin: 0; font-size: 22px; letter-spacing: -0.03em; }
+      .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+      .modal-card-wide { width: min(860px, calc(100vw - 40px)); }
+      .modal-card { width: min(560px, calc(100vw - 40px)); }
+      .message-modal { width: min(1040px, calc(100vw - 48px)); max-height: calc(100vh - 64px); }
+      .message-modal pre { max-height: calc(100vh - 180px); }
+      #modelModal { top: 84px; left: 50%; transform: translateX(-50%); }
+      #toolModal { top: 120px; right: 34px; }
+      #skillModal { top: 110px; left: 50%; transform: translateX(-50%); }
+      #messageModal { bottom: 24px; left: 50%; transform: translateX(-50%); }
+
+      .empty-state {
+        display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 16px; padding: 18px; text-align: center;
+      }
+
+      @media (max-width: 1320px) {
+        .workspace { grid-template-columns: 280px minmax(0, 1fr) 320px; }
+        .workbench-columns { grid-template-columns: 1fr; }
+        .request-deck { border-left: 0; border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 1180px) {
+        .workspace { grid-template-columns: 280px minmax(0, 1fr); }
+        .timeline-pane { display: none; }
+        .composer { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 920px) {
+        .workspace { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        .topbar { flex-wrap: wrap; }
+        .brand-cluster, .topbar-meta { width: 100%; }
+        .prompt-meta-controls, .prompt-tool-grid, .prompt-diff-summary-grid, .metrics-grid, .diff-pair { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand-cluster">
+          <div class="brand">
+            <button class="ghost mini" title="Collapse sidebar">☰</button>
+            <div class="brand-mark">H</div>
+            <div>
+              <div class="brand-title">Helixent Trace Lens</div>
+              <div class="brand-subtitle">AI coding agent control room</div>
+            </div>
+          </div>
+          <div class="session-summary-card">
+            <div class="session-summary-copy">
+              <div class="eyebrow">Session</div>
+              <div class="session-summary-value">claude-sonnet-4 · /Users/bytedance/Documents/Codex/helixent</div>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-meta">
+          <div class="path-chip">
+            <div class="path-chip-copy">
+              <div class="eyebrow">Workspace</div>
+              <div class="path-chip-value">/Users/bytedance/Documents/Codex/helixent</div>
+            </div>
+          </div>
+          <div class="status-pill live">Live · Tool · write_file</div>
+          <button class="ghost mini" data-open="modelModal">Model settings</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="panel sidebar">
+          <div class="sidebar-rail"><span>TR</span><span>SK</span><span>TL</span></div>
+
+          <section class="sidebar-panel">
+            <div class="panel-heading">
+              <span>Traces</span>
+              <button class="ghost mini">Refresh</button>
+            </div>
+            <div class="panel-body">
+              <input class="search" placeholder="Search trace files" value="2026-05" />
+              <div class="list">
+                <div class="list-item trace-item">
+                  <button class="trace-main">
+                    <span class="list-item-title"><span>2026-05-18T09-41-12-session-a13f</span></span>
+                    <span class="list-item-detail">184 KB · 09:44:03</span>
+                  </button>
+                  <button class="ghost mini danger">Delete</button>
+                </div>
+                <div class="list-item trace-item">
+                  <button class="trace-main">
+                    <span class="list-item-title"><span>2026-05-18T08-12-44-session-7bc2</span></span>
+                    <span class="list-item-detail">92 KB · 08:16:11</span>
+                  </button>
+                  <button class="ghost mini danger">Delete</button>
+                </div>
+                <div class="list-item trace-item">
+                  <button class="trace-main">
+                    <span class="list-item-title"><span>2026-05-17T22-03-09-session-ff91</span></span>
+                    <span class="list-item-detail">1.2 MB · 22:18:55</span>
+                  </button>
+                  <button class="ghost mini danger">Delete</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-panel">
+            <div class="panel-heading">
+              <span>Skills</span>
+              <button class="ghost mini" data-open="skillModal">New</button>
+            </div>
+            <div class="panel-body">
+              <div class="list">
+                <div class="list-item skill-item">
+                  <button class="skill-main">
+                    <span class="list-item-title"><span>/frontend-design</span><span class="chip purple">skill</span></span>
+                    <span class="list-item-detail">Frontend design and UI development workflows for polished interfaces.</span>
+                  </button>
+                  <button class="ghost mini">Insert</button>
+                </div>
+                <div class="list-item skill-item">
+                  <button class="skill-main">
+                    <span class="list-item-title"><span>/bits-code-guard</span><span class="chip blue">skill</span></span>
+                    <span class="list-item-detail">Static code review for logic, safety, and robustness issues.</span>
+                  </button>
+                  <button class="ghost mini">Insert</button>
+                </div>
+                <div class="list-item skill-item">
+                  <button class="skill-main">
+                    <span class="list-item-title"><span>/bits-unit-test-gen</span><span class="chip green">skill</span></span>
+                    <span class="list-item-detail">Generate and maintain unit tests with a strict workflow.</span>
+                  </button>
+                  <button class="ghost mini">Insert</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-panel" style="flex:1; min-height:0;">
+            <div class="panel-heading">
+              <span>Tools</span>
+              <button class="ghost mini">Apply</button>
+            </div>
+            <div class="panel-body">
+              <input class="search" placeholder="Search tools" value="" />
+              <div class="list">
+                <details class="tool-group" open>
+                  <summary><span>Shell</span><span>1 tool</span></summary>
+                  <div class="list-item tool-row">
+                    <label class="tool-toggle">
+                      <input type="checkbox" checked />
+                      <span>
+                        <span class="list-item-title"><span>bash</span><span class="chip amber">approval</span></span>
+                        <span class="list-item-detail">Execute shell commands in a persistent session.</span>
+                      </span>
+                    </label>
+                    <button class="ghost mini" data-open="toolModal">Schema</button>
+                  </div>
+                </details>
+                <details class="tool-group" open>
+                  <summary><span>File System</span><span>6 tools</span></summary>
+                  <div class="list-item tool-row">
+                    <label class="tool-toggle"><input type="checkbox" checked /><span><span class="list-item-title"><span>read_file</span><span class="chip blue">enabled</span></span><span class="list-item-detail">Read files directly from the workspace.</span></span></label>
+                    <button class="ghost mini">Schema</button>
+                  </div>
+                  <div class="list-item tool-row">
+                    <label class="tool-toggle"><input type="checkbox" checked /><span><span class="list-item-title"><span>write_file</span><span class="chip amber">approval</span></span><span class="list-item-detail">Write or overwrite files after inspection.</span></span></label>
+                    <button class="ghost mini">Schema</button>
+                  </div>
+                </details>
+                <details class="tool-group">
+                  <summary><span>Code Intelligence</span><span>4 tools</span></summary>
+                  <div class="list-item tool-row">
+                    <label class="tool-toggle"><input type="checkbox" checked /><span><span class="list-item-title"><span>grep_search</span><span class="chip blue">enabled</span></span><span class="list-item-detail">Search code with ripgrep-backed matching.</span></span></label>
+                    <button class="ghost mini">Schema</button>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="center-workbench">
+          <section class="panel workbench-frame">
+            <div class="workbench-columns">
+              <section class="output-stage">
+                <div class="pane-title output-toolbar">
+                  <span class="output-title-group">
+                    <span class="eyebrow">Live run</span>
+                    <span class="output-heading">Agent output</span>
+                    <span class="pane-hint">thinking · response · tool_use · tool_result · approvals</span>
+                  </span>
+                  <span class="export-controls">
+                    <select class="mini" style="width:124px;">
+                      <option>Last 1 run</option>
+                      <option>Last 3 runs</option>
+                      <option>Last 5 runs</option>
+                      <option>Full Trace</option>
+                      <option>Raw JSONL</option>
+                    </select>
+                    <button class="ghost mini">Clear</button>
+                    <button class="ghost mini">Copy</button>
+                    <button class="ghost mini">Export</button>
+                    <span class="export-status">Copied</span>
+                  </span>
+                </div>
+
+                <div class="output-list">
+                  <div class="output-stack">
+                    <article class="output-card thinking">
+                      <div class="output-card-header">
+                        <div>
+                          <div class="block-label">Thinking</div>
+                          <div class="output-subtitle">Live reasoning trace from the model</div>
+                        </div>
+                        <span class="chip purple">internal</span>
+                      </div>
+                      <div class="plain-text">I should preserve the exact functional inventory of the current UI: traces, skills, grouped tools, prompt versions, approvals, questions, tasks, metrics, diffing, and modal workflows.</div>
+                    </article>
+
+                    <article class="output-card text">
+                      <div class="output-card-header">
+                        <div>
+                          <div class="block-label">Response</div>
+                          <div class="output-subtitle">Assistant answer ready for review</div>
+                        </div>
+                        <span class="chip green">assistant</span>
+                      </div>
+                      <div class="plain-text">I created a faithful redesign concept that keeps every operational surface from the current product while improving hierarchy, spacing, and visual clarity.</div>
+                    </article>
+
+                    <article class="output-card tool_use">
+                      <div class="output-card-header">
+                        <div>
+                          <div class="block-label">Tool request · write_file</div>
+                          <div class="output-subtitle">Model selected a tool invocation</div>
+                        </div>
+                        <span class="chip amber">tool call</span>
+                      </div>
+                      <pre>{
+  "file_path": "/Users/bytedance/Documents/Codex/helixent/web/public/design-mockup-v2.html",
+  "content": "<!doctype html>..."
+}</pre>
+                    </article>
+
+                    <article class="output-card tool_result">
+                      <div class="output-card-header">
+                        <div>
+                          <div class="block-label">Tool result</div>
+                          <div class="output-subtitle">Structured tool payload returned to the agent</div>
+                        </div>
+                        <span class="chip blue">tool</span>
+                      </div>
+                      <pre>[{
+  "status": "ok",
+  "message": "File created successfully",
+  "path": "/Users/bytedance/Documents/Codex/helixent/web/public/design-mockup-v2.html"
+}]</pre>
+                    </article>
+
+                    <article class="output-card human_action approval">
+                      <div class="block-label">Approval requested</div>
+                      <div class="human-action-copy">Protected tool execution is paused until you review the request.</div>
+                      <pre>{
+  "name": "bash",
+  "input": {
+    "command": "bun test web/__tests__/frontend-view.test.ts",
+    "description": "Run frontend view tests"
+  }
+}</pre>
+                      <div class="choice-row">
+                        <button class="mini">Allow once</button>
+                        <button class="ghost mini">Always allow</button>
+                        <button class="danger mini">Deny</button>
+                      </div>
+                    </article>
+
+                    <article class="output-card human_action question">
+                      <div class="block-label">Question requested</div>
+                      <div class="human-action-copy">The agent needs structured input before it can continue the run.</div>
+                      <div class="question-stack">
+                        <section class="trace-card question-card">
+                          <div class="card-title">Choose implementation mode</div>
+                          <p>Should the redesign prioritize visual fidelity to the current layout or introduce stronger information hierarchy?</p>
+                          <div class="question-options">
+                            <label class="question-option"><input type="radio" checked name="q1" /><span>Faithful redesign · Keep all current surfaces and improve polish.</span></label>
+                            <label class="question-option"><input type="radio" name="q1" /><span>Progressive redesign · Rebalance layout while preserving functionality.</span></label>
+                          </div>
+                        </section>
+                      </div>
+                      <div class="choice-row"><button class="mini">Submit answer</button></div>
+                    </article>
+
+                    <article class="output-card error">
+                      <div class="output-card-header">
+                        <div>
+                          <div class="block-label">Runtime error</div>
+                          <div class="output-subtitle">The run emitted an error event</div>
+                        </div>
+                        <span class="chip red">error</span>
+                      </div>
+                      <div class="plain-text">Prompt version save skipped: no runtime snapshot available before the first model request.</div>
+                    </article>
+                  </div>
+                </div>
+              </section>
+
+              <section class="request-deck">
+                <div class="pane-title">
+                  <span>
+                    <span class="eyebrow">Prompt lab</span>
+                    <span class="output-heading">Request inspector</span>
+                  </span>
+                </div>
+
+                <section class="prompt-panel context-view">
+                  <div class="prompt-playground">
+                    <header class="prompt-toolbar">
+                      <div class="prompt-toolbar-main">
+                        <span class="eyebrow">Prompt lab</span>
+                        <strong>System prompt & request package</strong>
+                        <span class="tiny">Active version: Version 3 · 3 versions</span>
+                      </div>
+                      <div class="prompt-toolbar-actions">
+                        <details class="prompt-version-menu">
+                          <summary>Versions</summary>
+                          <div class="prompt-version-list" style="margin-top:8px; min-width:260px;">
+                            <div class="list-item prompt-version-item">
+                              <button class="prompt-version-main">
+                                <span class="list-item-title"><span>Version 3</span><span class="chip blue">active</span></span>
+                                <span class="list-item-detail">saved version · 9 messages · 14 tools</span>
+                              </button>
+                              <button class="ghost mini">Delete</button>
+                            </div>
+                            <div class="list-item prompt-version-item">
+                              <button class="prompt-version-main">
+                                <span class="list-item-title"><span>Version 2</span></span>
+                                <span class="list-item-detail">saved version · 7 messages · 12 tools</span>
+                              </button>
+                              <button class="ghost mini">Delete</button>
+                            </div>
+                          </div>
+                        </details>
+                        <button class="ghost mini">Save draft</button>
+                        <button class="ghost mini">Save & activate</button>
+                        <button class="ghost mini">Reset</button>
+                      </div>
+                    </header>
+
+                    <form class="prompt-editor">
+                      <div class="prompt-meta-controls">
+                        <input value="Version 4" aria-label="Version name" />
+                        <span class="inline-control">
+                          <input value="frontend-design" aria-label="Forced skill" />
+                          <button class="ghost mini" type="button">+ Skill</button>
+                        </span>
+                      </div>
+
+                      <label class="system-prompt-field">
+                        <span>System prompt</span>
+                        <textarea spellcheck="false">You are an AI coding agent with tool access, trace instrumentation, prompt versioning, and human approval workflows. Prefer structured progress updates, preserve session safety, and surface prompt/runtime differences clearly in the web UI.</textarea>
+                      </label>
+
+                      <div class="prompt-meta-line">
+                        <span class="tiny">9 messages · 14 tools · /frontend-design · query ready</span>
+                        <button class="ghost mini" type="button">Package</button>
+                      </div>
+
+                      <div class="prompt-validation">
+                        <span class="chip blue">System prompt ready</span>
+                        <span class="chip blue">9 message(s)</span>
+                        <span class="chip green">User query detected</span>
+                        <span class="chip blue">14 visible tool(s)</span>
+                      </div>
+
+                      <details class="request-package" open>
+                        <summary>
+                          <span>Request Package</span>
+                          <span class="tiny">9 messages · 14 tools · saved with version</span>
+                        </summary>
+                        <div class="request-package-body">
+                          <p class="request-package-hint">These fields are part of the prompt version snapshot. Active versions replay this package on the next run.</p>
+                          <label>
+                            Messages override JSON
+                            <textarea rows="7" spellcheck="false">[
+  { "role": "user", "content": [{ "type": "text", "text": "Redesign the Helixent web UI faithfully." }] },
+  { "role": "assistant", "content": [{ "type": "text", "text": "I will inspect the current web layer first." }] }
+]</textarea>
+                          </label>
+                          <details class="prompt-tools-details" open>
+                            <summary>Tools in this request · 14 · read_file, grep_search, bash, write_file, ...</summary>
+                            <p class="request-package-hint">Version tools are selected from currently enabled session tools.</p>
+                            <div class="prompt-tool-grid">
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>read_file</span></label>
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>write_file</span></label>
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>grep_search</span></label>
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>glob_search</span></label>
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>bash</span></label>
+                              <label class="prompt-tool-toggle"><input type="checkbox" checked /><span>todo_write</span></label>
+                            </div>
+                          </details>
+                        </div>
+                      </details>
+                    </form>
+                  </div>
+                </section>
+              </section>
+            </div>
+          </section>
+
+          <form class="panel composer">
+            <div class="composer-leading">
+              <span class="composer-prefix">❯</span>
+              <div>
+                <div class="composer-title">Ask Helixent</div>
+                <div class="composer-subtitle">Describe the coding task, bug, refactor, or investigation you want the agent to handle.</div>
+                <div class="command-strip">
+                  <span class="chip blue">/frontend-design</span>
+                  <span class="chip purple">/bits-code-guard</span>
+                  <span class="chip green">/bits-unit-test-gen</span>
+                </div>
+              </div>
+            </div>
+            <textarea rows="3" placeholder="Type your message or use / for commands...">Create a faithful redesign mockup that preserves all current Helixent web UI panels and workflows.</textarea>
+            <div class="composer-tools">
+              <button type="button" class="ghost mini">+</button>
+              <button type="button" class="ghost mini">⌘K</button>
+            </div>
+            <button type="button" class="secondary">Abort</button>
+            <button type="submit">Run</button>
+          </form>
+        </section>
+
+        <aside class="timeline-pane">
+          <section class="trace-card">
+            <div class="card-title">Action Center</div>
+            <div class="action-center">
+              <div class="action-center-card approval-state" data-action-state="approval">
+                <div class="eyebrow">Human in the loop</div>
+                <div class="action-center-title">Approval required</div>
+                <div class="action-center-copy">bash wants to run frontend tests before finalizing the redesign.</div>
+                <div class="tiny">Review the approval card in the live run stream to allow once, always allow, or deny.</div>
+              </div>
+              <div class="action-center-card question-state" data-action-state="question" style="display:none;">
+                <div class="eyebrow">Human in the loop</div>
+                <div class="action-center-title">Question waiting</div>
+                <div class="action-center-copy">The agent needs structured input about redesign direction.</div>
+                <div class="tiny">Answer the question card in the live run stream to continue the run.</div>
+              </div>
+              <div class="action-center-card replay-state" data-action-state="replay" style="display:none;">
+                <div class="eyebrow">Trace playback</div>
+                <div class="action-center-title">Replay mode</div>
+                <div class="action-center-copy">This trace is read-only.</div>
+                <div class="tiny">Inspect output, prompt assembly, tasks, and timeline without affecting the live session.</div>
+              </div>
+              <div class="action-center-card idle-state" data-action-state="idle" style="display:none;">
+                <div class="eyebrow">Run status</div>
+                <div class="action-center-title">No pending actions</div>
+                <div class="action-center-copy">Thinking</div>
+                <div class="tiny">Approvals and structured questions will appear here when the agent needs you.</div>
+              </div>
+              <div class="choice-row" style="margin-top:12px;">
+                <button class="ghost mini" data-cycle-action>Cycle state</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="trace-card">
+            <div class="card-title">Tasks</div>
+            <div class="task-summary">1 completed, 1 in progress, 1 pending</div>
+            <div class="task-list">
+              <div class="task-row completed"><span class="task-icon">✓</span><span class="task-copy"><strong>Inspect web layer files</strong><span>Reviewed server, types, tools, skills, trace, prompt versions, and public assets.</span></span></div>
+              <div class="task-row"><span class="task-icon">◐</span><span class="task-copy"><strong>Build faithful v2 mockup</strong><span>Creating a redesign that preserves all 20 panels and modal surfaces.</span></span></div>
+              <div class="task-row pending"><span class="task-icon">○</span><span class="task-copy"><strong>Save mockup file</strong><span>Write final HTML to public/design-mockup-v2.html.</span></span></div>
+            </div>
+          </section>
+
+          <section class="trace-card">
+            <div class="card-title">Run Metrics</div>
+            <div class="metrics-stack">
+              <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-label">Status</div><div class="metric-value">Tool · write_file</div></div>
+                <div class="metric-card"><div class="metric-label">Input</div><div class="metric-value">8.4k</div></div>
+                <div class="metric-card"><div class="metric-label">Output</div><div class="metric-value">2.1k</div></div>
+                <div class="metric-card"><div class="metric-label">Tool calls</div><div class="metric-value">6</div></div>
+                <div class="metric-card"><div class="metric-label">Hooks</div><div class="metric-value">18</div></div>
+                <div class="metric-card"><div class="metric-label">Prompt</div><div class="metric-value">Version</div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="trace-card">
+            <div class="card-title">Prompt Assembly</div>
+            <div class="prompt-diff-panel">
+              <div class="prompt-diff-source">Version 3 vs runtime</div>
+              <div class="prompt-diff-summary-grid">
+                <div class="prompt-diff-summary-item changed"><span>System</span><strong>changed</strong></div>
+                <div class="prompt-diff-summary-item"><span>Messages</span><strong>7 → 9</strong></div>
+                <div class="prompt-diff-summary-item changed"><span>Tools</span><strong>+2 / -0</strong></div>
+                <div class="prompt-diff-summary-item changed"><span>Skill</span><strong>changed</strong></div>
+              </div>
+              <details class="prompt-diff-details" open>
+                <summary>View detailed diff</summary>
+                <div class="diff-grid" style="padding:12px; border-top:1px solid var(--line);">
+                  <section class="diff-row">
+                    <div class="diff-row-title">System prompt</div>
+                    <div class="diff-summary">2 added · 1 removed</div>
+                    <pre><span class="diff-line diff-del">- Prefer minimal UI output.</span>
+<span class="diff-line diff-add">+ Preserve all current Helixent web UI panels.</span>
+<span class="diff-line diff-add">+ Improve hierarchy and polish without losing fidelity.</span></pre>
+                  </section>
+                  <section class="diff-row">
+                    <div class="diff-row-title">Tools</div>
+                    <div class="diff-tool-list">
+                      <span class="diff-line diff-add">+ write_file</span>
+                      <span class="diff-line diff-add">+ todo_write</span>
+                    </div>
+                  </section>
+                </div>
+              </details>
+              <details class="prompt-inspect">
+                <summary>Final request JSON</summary>
+                <pre>{
+  "source": "prompt_version",
+  "versionName": "Version 3",
+  "requestedSkillName": "frontend-design",
+  "messages": 9,
+  "tools": 14
+}</pre>
+              </details>
+            </div>
+          </section>
+
+          <div class="pane-title">
+            <span>Hook & Tool Timeline</span>
+            <select class="mini" style="width:auto; min-width:110px;">
+              <option>All</option>
+              <option>Hooks</option>
+              <option>Model</option>
+              <option>Tools</option>
+              <option>Human</option>
+            </select>
+          </div>
+          <div class="timeline-tabs">
+            <button class="filter-pill mini active">All</button>
+            <button class="filter-pill mini">Hooks</button>
+            <button class="filter-pill mini">Model</button>
+            <button class="filter-pill mini">Tools</button>
+            <button class="filter-pill mini">Human</button>
+          </div>
+          <div class="timeline">
+            <div class="timeline-stack">
+              <details class="timeline-item hook_triggered" open>
+                <summary>
+                  <span class="timeline-icon">◌</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">beforeModel</span><span class="timeline-badge">hook</span></span>
+                    <span class="timeline-meta">hook triggered · 09:41:13</span>
+                  </span>
+                </summary>
+                <pre>{ "messageCount": 9, "toolCount": 14, "requestedSkillName": "frontend-design" }</pre>
+              </details>
+              <details class="timeline-item token_usage">
+                <summary>
+                  <span class="timeline-icon">◌</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">Token usage</span><span class="timeline-badge">8.4k / 2.1k</span></span>
+                    <span class="timeline-meta">token usage · 09:41:18</span>
+                  </span>
+                </summary>
+                <pre>{ "input_tokens": 8421, "output_tokens": 2144, "total_tokens": 10565 }</pre>
+              </details>
+              <details class="timeline-item tool_call_detected">
+                <summary>
+                  <span class="timeline-icon">⌘</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">Runtime detected tool call: write_file</span><span class="timeline-badge">write_file</span></span>
+                    <span class="timeline-meta">tool call detected · 09:41:20</span>
+                  </span>
+                </summary>
+                <pre>{ "toolUse": { "name": "write_file", "path": "web/public/design-mockup-v2.html" } }</pre>
+              </details>
+              <details class="timeline-item tool_execution_started">
+                <summary>
+                  <span class="timeline-icon">⌘</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">Tool started: bash</span><span class="timeline-badge">bash</span></span>
+                    <span class="timeline-meta">tool execution started · 09:41:24</span>
+                  </span>
+                </summary>
+                <pre>{ "command": "bun test web/__tests__/frontend-view.test.ts" }</pre>
+              </details>
+              <details class="timeline-item approval_requested">
+                <summary>
+                  <span class="timeline-icon">◎</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">Approval requested: bash</span><span class="timeline-badge">approval</span></span>
+                    <span class="timeline-meta">human action · 09:41:24</span>
+                  </span>
+                </summary>
+                <pre>{ "toolUse": { "name": "bash", "description": "Run frontend view tests" } }</pre>
+              </details>
+              <details class="timeline-item todo_update">
+                <summary>
+                  <span class="timeline-icon">◧</span>
+                  <span class="timeline-summary-copy">
+                    <span class="timeline-summary-topline"><span class="timeline-title">Todo panel updated</span><span class="timeline-badge">3 todos</span></span>
+                    <span class="timeline-meta">todo update · 09:41:26</span>
+                  </span>
+                </summary>
+                <pre>{ "todos": ["Inspect web layer files", "Build faithful v2 mockup", "Save mockup file"] }</pre>
+              </details>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div class="modal-layer">
+      <div id="modelModal" class="modal modal-card show">
+        <h2>Configure models</h2>
+        <p class="modal-copy">Use the same provider catalog as the TUI. Existing API keys are preserved unless replaced.</p>
+        <section class="prompt-editor">
+          <div class="card-title">Configured models</div>
+          <div class="list">
+            <div class="list-item model-row">
+              <span>
+                <span class="list-item-title"><span>claude-sonnet-4</span><span class="chip blue">***9f2a1c</span></span>
+                <span class="list-item-detail">anthropic · https://api.anthropic.com</span>
+              </span>
+              <button class="ghost mini">Edit</button>
+              <button class="ghost mini">Delete</button>
+            </div>
+            <div class="list-item model-row">
+              <span>
+                <span class="list-item-title"><span>gpt-4.1</span><span class="chip blue">***7ab4de</span></span>
+                <span class="list-item-detail">openai · https://api.openai.com/v1</span>
+              </span>
+              <button class="ghost mini">Edit</button>
+              <button class="ghost mini">Delete</button>
+            </div>
+          </div>
+          <label>Default model<select><option selected>claude-sonnet-4</option><option>gpt-4.1</option></select></label>
+          <div class="card-title">Add or replace model</div>
+          <label>Provider<select><option>Anthropic</option><option>OpenAI</option></select></label>
+          <label>Model name<input value="claude-sonnet-4" /></label>
+          <label>Base URL<input value="https://api.anthropic.com" /></label>
+          <label>API key<input type="password" value="sk-ant-xxxxxxxxxxxx" /></label>
+        </section>
+        <div class="modal-actions"><button class="ghost mini" data-close="modelModal">Close</button><button class="mini">Save models</button></div>
+      </div>
+
+      <div id="toolModal" class="modal modal-card" >
+        <h2>Tool schema</h2>
+        <p class="modal-copy">bash — Execute a given bash command in a persistent shell session with optional timeout.</p>
+        <pre>{
+  "type": "object",
+  "properties": {
+    "command": { "type": "string" },
+    "description": { "type": "string" },
+    "timeout": { "type": "integer" }
+  },
+  "required": ["command"]
+}</pre>
+        <div class="modal-actions"><button class="ghost mini" data-close="toolModal">Close</button></div>
+      </div>
+
+      <div id="skillModal" class="modal modal-card-wide">
+        <h2>Skill</h2>
+        <label>Name<input value="frontend-design" /></label>
+        <label>Description<input value="Frontend design and UI development" /></label>
+        <label>SKILL.md<textarea rows="12">---
+name: frontend-design
+description: Frontend design and UI development
+---
+
+# Frontend Design
+
+Use this skill when the user asks for polished UI concepts, mockups, or implementation-ready frontend structure.</textarea></label>
+        <div class="modal-actions"><button class="danger mini">Delete</button><button class="ghost mini" data-close="skillModal">Close</button><button class="mini">Save</button></div>
+      </div>
+
+      <div id="messageModal" class="modal message-modal modal-card-wide show">
+        <h2>Message</h2>
+        <pre>role: assistant
+blocks: 2
+
+Thinking:
+I should preserve the exact functional inventory of the current UI.
+
+Text:
+I created a faithful redesign concept that keeps every operational surface from the current product while improving hierarchy, spacing, and visual clarity.</pre>
+        <div class="modal-actions"><button class="ghost mini" data-close="messageModal">Close</button></div>
+      </div>
+    </div>
+
+    <script>
+      document.querySelectorAll('[data-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-open');
+          const modal = document.getElementById(id);
+          if (modal) modal.classList.add('show');
+        });
+      });
+
+      document.querySelectorAll('[data-close]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-close');
+          const modal = document.getElementById(id);
+          if (modal) modal.classList.remove('show');
+        });
+      });
+
+      const states = ['approval', 'question', 'replay', 'idle'];
+      let stateIndex = 0;
+      const cycleButton = document.querySelector('[data-cycle-action]');
+      if (cycleButton) {
+        cycleButton.addEventListener('click', () => {
+          stateIndex = (stateIndex + 1) % states.length;
+          document.querySelectorAll('[data-action-state]').forEach((el) => {
+            el.style.display = el.getAttribute('data-action-state') === states[stateIndex] ? 'grid' : 'none';
+          });
+        });
+      }
+
+      const livePill = document.querySelector('.status-pill.live');
+      let tick = 0;
+      setInterval(() => {
+        tick += 1;
+        const glow = 10 + Math.abs(Math.sin(tick / 8)) * 14;
+        if (livePill) livePill.style.boxShadow = `0 0 ${glow}px rgba(111,227,154,0.14)`;
+      }, 120);
+    </script>
+  </body>
+</html>
