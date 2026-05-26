@@ -144,8 +144,8 @@ describe("Trace Lens frontend smoke", () => {
     ];
     const tools = [{ name: "bash", description: "Run shell", requiresApproval: true, enabled: true }];
     const commands = [
-      { name: "clear", description: "Clear history", type: "builtin" },
-      { name: "coding-plan", description: "Plan coding changes", type: "skill" },
+      { name: "clear", description: "Clear history", type: "builtin", effect: "local" },
+      { name: "coding-plan", description: "Plan coding changes", type: "skill", effect: "prompted" },
     ];
 
     const request = renderRequestHTML(replay.events, null, true);

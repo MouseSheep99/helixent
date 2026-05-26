@@ -343,6 +343,7 @@ function isFailedToolEvent(event) {
 }
 
 function classifyTimelineEvent(event) {
+  if (event.kind === "command_executed") return "slash";
   if (event.kind === "user_message") return "user";
   if (event.kind === "hook_triggered") return "hook";
   if (["input_context", "model_output_block", "token_usage", "agent_progress"].includes(event.kind)) return "model";
@@ -359,6 +360,7 @@ function classifyTimelineEvent(event) {
 
 function phaseForTimelineEvent(event) {
   if (event.kind === "user_message") return "user_input";
+  if (event.kind === "command_executed") return "user_input";
   if (event.kind === "error") return "errors";
   if (event.kind === "prompt_version_applied" || event.kind === "input_context") return "prompt_phase";
   if (["skills_inventory", "skill_system_injected", "skill_loaded"].includes(event.kind)) return "skills";
@@ -402,6 +404,14 @@ function timelineEventSubtitle(event) {
   if (event.kind === "input_context") {
     const imageCount = extractImagesFromEvent(event).length;
     if (imageCount > 0) return `input_context · 📎 ${imageCount} image${imageCount === 1 ? "" : "s"}`;
+  }
+  if (event.kind === "command_executed") {
+    const effect = event.data?.effect;
+    const reason = event.data?.reason;
+    const parts = [];
+    if (effect) parts.push(effect);
+    if (reason === "cli-only") parts.push("cli-only");
+    return parts.length ? parts.join(" · ") : "slash command";
   }
   return friendlyTimelineKind(event.kind);
 }
@@ -564,6 +574,7 @@ function phaseChip(type) {
 }
 
 function timelineEventChip(node) {
+  if (node.category === "slash") return "SLASH";
   if (node.category === "user") return "USER";
   if (node.category === "hook") return "HOOK";
   if (node.category === "model") return "MODEL";

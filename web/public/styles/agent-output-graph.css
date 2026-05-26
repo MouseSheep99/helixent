@@ -641,3 +641,160 @@
   background: rgba(122, 200, 255, 0.04);
   transition: background 200ms ease;
 }
+
+/* ============================================================
+   Slash command — chat bubble + command card
+   ============================================================ */
+
+.chat-command-bubble {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(680px, 78%);
+  padding: 8px 12px;
+  border-radius: 16px 16px 4px 16px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.chat-command-bubble[data-effect="local"] {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.chat-command-bubble[data-effect="prompted"] {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.10);
+}
+
+.chat-command-bubble[data-effect="unknown"] {
+  border-color: rgba(251, 146, 60, 0.45);
+  background: rgba(251, 146, 60, 0.10);
+}
+
+.chat-command-icon {
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.chat-command-name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.chat-command-effect-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
+}
+
+.chat-command-bubble[data-effect="local"] .chat-command-effect-tag {
+  color: rgb(148, 163, 184);
+}
+.chat-command-bubble[data-effect="prompted"] .chat-command-effect-tag {
+  color: rgb(96, 165, 250);
+}
+.chat-command-bubble[data-effect="unknown"] .chat-command-effect-tag {
+  color: rgb(251, 146, 60);
+}
+
+.command-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 13px;
+}
+
+.command-card[data-effect="local"] {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.command-card[data-effect="prompted"] {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.command-card[data-effect="unknown"] {
+  border-color: rgba(251, 146, 60, 0.35);
+}
+
+.command-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.command-card-icon {
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.command-card-title {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.command-card-effect {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-tertiary);
+}
+
+.command-card-effect-local {
+  color: rgb(148, 163, 184);
+  background: rgba(148, 163, 184, 0.10);
+}
+
+.command-card-effect-prompted {
+  color: rgb(96, 165, 250);
+  background: rgba(96, 165, 250, 0.10);
+}
+
+.command-card-effect-unknown {
+  color: rgb(251, 146, 60);
+  background: rgba(251, 146, 60, 0.10);
+}
+
+.command-card-body {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.command-card-status {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.command-card.command-card-fade {
+  animation: command-card-fade 6s ease forwards;
+  animation-delay: 3s;
+}
+
+@keyframes command-card-fade {
+  to {
+    opacity: 0.55;
+  }
+}

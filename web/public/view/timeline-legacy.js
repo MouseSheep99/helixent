@@ -84,6 +84,7 @@ export function friendlyTimelineKind(kind = "") {
 
 export function timelineIcon(kind = "") {
   if (kind === "user_message") return "▶";
+  if (kind === "command_executed") return "❯";
   if (["approval_requested", "approval_resolved", "question_requested", "question_resolved"].includes(kind)) return "◎";
   if (["tool_call_detected", "tool_execution_started", "tool_execution_completed", "tool_disabled"].includes(kind)) return "⌘";
   if (["hook_triggered", "agent_progress", "input_context", "model_output_block", "token_usage"].includes(kind)) return "◌";
@@ -115,9 +116,19 @@ export function shouldShowTimelineEvent(event, filter = "all") {
       "question_resolved",
     ].includes(event.kind);
   }
+  if (filter === "slash") {
+    return event.kind === "command_executed";
+  }
+  if (filter === "slash:local") {
+    return event.kind === "command_executed" && event.data?.effect === "local";
+  }
+  if (filter === "slash:prompted") {
+    return event.kind === "command_executed" && event.data?.effect === "prompted";
+  }
   if (filter === "session") {
     return [
       "user_message",
+      "command_executed",
       "session_created",
       "session_cleared",
       "session_aborted",

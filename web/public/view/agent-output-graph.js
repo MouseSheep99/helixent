@@ -5,11 +5,22 @@ import { contentToText, escapeAttr, escapeHtml } from "./utils.js";
 
 export function isAgentOutputRow(row) {
   if (row?.type === "message" && row.message) return true;
+  if (row?.type === "command_executed") return true;
   if (row?.kind === "input_context") return true;
   if (row?.kind === "model_output_block") return true;
   if (row?.kind === "tool_call_detected") return true;
   if (row?.kind === "error") return row.data?.showInOutput !== false;
   return false;
+}
+
+const SLASH_TOKEN_RE = /^\/([A-Za-z][\w-]*)/;
+
+export function detectSlashCommandText(text) {
+  if (typeof text !== "string") return null;
+  const trimmed = text.trim();
+  const match = SLASH_TOKEN_RE.exec(trimmed);
+  if (!match) return null;
+  return { name: match[1].toLowerCase(), raw: trimmed };
 }
 
 export function buildAgentOutputGraph(rows = [], _options = {}) {
@@ -20,6 +31,7 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
   let currentStep = null;
   let pendingSentPromptRowIndex = -1;
   let messageIndex = -1;
+  let pendingCommandCard = null;
 
   const register = (node) => {
     graph.nodeById[node.id] = node;
@@ -37,6 +49,7 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
       status: "success",
       steps: [],
       errors: [],
+      commandCards: [],
       rowIndex,
     });
     graph.runs.push(currentRun);
@@ -77,9 +90,41 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
       continue;
     }
 
+    if (row.type === "command_executed") {
+      const run = ensureRun(rowIndex);
+      currentStep = null;
+      const cmdIndex = run.commandCards.length + 1;
+      const userText = run.user?.text || "";
+      const card = register({
+        id: `cmd:${run.index}:${cmdIndex}`,
+        type: "command_card",
+        rowIndex,
+        runIndex: run.index,
+        cmdIndex,
+        name: row.name,
+        effect: row.effect ?? null,
+        reason: row.reason ?? null,
+        detail: row.detail ?? null,
+        userText,
+        assistantBlocks: [],
+        at: row.at,
+      });
+      run.commandCards.push(card);
+      pendingCommandCard = card;
+      continue;
+    }
+
     if (row.type === "message" && row.message) {
       messageIndex += 1;
       const message = row.message;
+      if (message.role === "assistant" && message.__synthetic && pendingCommandCard) {
+        const blocks = Array.isArray(message.content) ? message.content : [];
+        for (const block of blocks) {
+          if (!block || typeof block !== "object") continue;
+          pendingCommandCard.assistantBlocks.push(block);
+        }
+        continue;
+      }
       if (message.role === "user") {
         const text = messageText(message);
         const isProjectContext = isProjectContextMessage(message);
@@ -114,6 +159,7 @@ export function buildAgentOutputGraph(rows = [], _options = {}) {
           status: "success",
           steps: [],
           errors: [],
+          commandCards: [],
           rowIndex,
         });
         graph.runs.push(currentRun);
@@ -476,6 +522,22 @@ function renderUserTurn(run) {
   const text = run.user.text || "";
   const images = Array.isArray(run.user.images) ? run.user.images : [];
   if (!text && !images.length) return "";
+  const slash = detectSlashCommandText(text);
+  const card = slash ? (run.commandCards || []).find((c) => c.name?.toLowerCase() === slash.name) : null;
+  // Only collapse to a chat-command-bubble for "pure" slash commands that
+  // emitted a command_executed event (effect known). Slashes with args or
+  // unknown commands fall through to the regular user-bubble so the full
+  // text remains visible to the user.
+  if (slash && card && !images.length && slash.raw === `/${slash.name}`) {
+    const effect = card.effect ?? "unknown";
+    const effectLabel = effect === "local" ? "Local" : effect === "prompted" ? "Prompted" : "Unknown";
+    return `
+      <div class="chat-command-bubble" data-effect="${escapeAttr(effect)}"${idxAttr}${userNodeAttr}${scopeAttr}>
+        <span class="chat-command-icon" aria-hidden="true">❯</span>
+        <span class="chat-command-name">/${escapeHtml(slash.name)}</span>
+        <span class="chat-command-effect-tag">${escapeHtml(effectLabel)}</span>
+      </div>`;
+  }
   const stripHtml = images.length
     ? `<div class="user-bubble-images">${renderThumbnailStrip(images, { size: 80, group: `user-${run.index}` })}</div>`
     : "";
@@ -490,19 +552,67 @@ function renderUserTurn(run) {
 function renderAgentTurn(run, options) {
   const trail = renderReasoningTrail(run, options);
   const finalHtml = renderFinalAnswer(run);
+  const cards = (run.commandCards || []).map(renderCommandCard).join("");
   const agentAttr = run.agentNodeId ? ` data-node-id="${escapeAttr(run.agentNodeId)}"` : "";
   const scopeAttr = run.nodeId ? ` data-node-scope="${escapeAttr(run.nodeId)}"` : "";
   const sentPromptIcon = renderSentPromptIcon(run.sentPromptRowIndex);
   const meta = sentPromptIcon ? `<div class="agent-turn-meta">${sentPromptIcon}</div>` : "";
-  if (!trail && !finalHtml) {
+  if (!trail && !finalHtml && !cards) {
     return `<div class="agent-turn empty" data-status="${escapeAttr(run.status)}"${agentAttr}${scopeAttr}>${meta}<div class="agent-detail-empty">No model output in this run yet.</div></div>`;
   }
   return `
     <div class="agent-turn" data-status="${escapeAttr(run.status)}"${agentAttr}${scopeAttr}>
       ${meta}
+      ${cards}
       ${trail}
       ${finalHtml}
     </div>`;
+}
+
+function renderCommandCard(card) {
+  const effect = card.effect || "unknown";
+  const effectLabelMap = {
+    local: "Local · won't reach the model",
+    prompted: "Sent to model",
+    unknown: "Unknown · sent as plain text",
+  };
+  const typeLabel = effect === "prompted" ? "Skill" : "Built-in";
+  const effectChip = `<span class="command-card-effect command-card-effect-${escapeAttr(effect)}">${escapeHtml(typeLabel)} · ${escapeHtml(effectLabelMap[effect] || effect)}</span>`;
+  if (card.name === "clear") {
+    return `
+      <article class="command-card command-card-empty command-card-fade" data-effect="${escapeAttr(effect)}" data-name="${escapeAttr(card.name)}">
+        <header class="command-card-header">
+          <span class="command-card-icon" aria-hidden="true">❯</span>
+          <span class="command-card-title">/${escapeHtml(card.name)}</span>
+          ${effectChip}
+        </header>
+        <div class="command-card-status">Session cleared</div>
+      </article>`;
+  }
+  const blocks = Array.isArray(card.assistantBlocks) ? card.assistantBlocks : [];
+  const bodyText = blocks
+    .map((block) => {
+      if (block?.type === "text" && typeof block.text === "string") return block.text;
+      if (typeof block?.text === "string") return block.text;
+      return contentToText(block);
+    })
+    .filter(Boolean)
+    .join("\n\n");
+  const reasonHtml = card.reason === "cli-only"
+    ? `<div class="command-card-status">Only available in the terminal UI.</div>`
+    : "";
+  const bodyHtml = bodyText
+    ? `<pre class="command-card-body monospace">${escapeHtml(bodyText)}</pre>`
+    : reasonHtml || `<div class="command-card-status">Command executed.</div>`;
+  return `
+    <article class="command-card" data-effect="${escapeAttr(effect)}" data-name="${escapeAttr(card.name)}">
+      <header class="command-card-header">
+        <span class="command-card-icon" aria-hidden="true">❯</span>
+        <span class="command-card-title">/${escapeHtml(card.name)}</span>
+        ${effectChip}
+      </header>
+      ${bodyHtml}
+    </article>`;
 }
 
 function renderReasoningTrail(run, options = {}) {

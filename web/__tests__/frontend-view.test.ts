@@ -100,7 +100,7 @@ describe("frontend view helpers", () => {
 
   test("renders skills and slash command options", () => {
     const skills = [{ slug: "coding-plan", name: "coding-plan", description: "Plan coding changes" }];
-    const commands = [{ name: "coding-plan", description: "Plan coding changes", type: "skill" }];
+    const commands = [{ name: "coding-plan", description: "Plan coding changes", type: "skill", effect: "prompted" }];
 
     expect(renderSkillsHTML(skills)).toContain('data-use-skill="coding-plan"');
     expect(renderCommandsHTML(commands)).toContain('value="/coding-plan "');

@@ -542,6 +542,13 @@
   min-width: 0;
 }
 
+.panel-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .panel-chevron {
   display: inline-block;
   width: 0;

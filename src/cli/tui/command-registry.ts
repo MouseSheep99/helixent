@@ -1,10 +1,33 @@
 import { listSkills } from "@/agent/skills/list-skills";
 import type { SkillFrontmatter } from "@/agent/skills/types";
 
+/** Where a slash command is allowed to run. */
+export type SlashCommandSurface = "cli" | "web";
+
 export interface SlashCommand {
   name: string;
   description: string;
   type: "builtin" | "skill";
+  /**
+   * Whether this command's user/assistant turn participates in subsequent model
+   * context.
+   *
+   * - `local`: dispatcher handles it server-side and never appends to
+   *   `session.agent.messages`. Examples: `/clear`, `/help`, `/exit`.
+   * - `prompted`: the input flows through `agent.stream(userMessage)` and is
+   *   visible to the model in later turns. All skills default to this.
+   *
+   * Required so any new builtin must explicitly choose its semantics.
+   */
+  effect: "local" | "prompted";
+  /**
+   * Surfaces where this command is supported. Defaults to ["cli","web"] when omitted.
+   * Use to mark TUI-only commands (e.g. exit/quit) so the web surface can give a
+   * clear "unsupported" reply instead of silently no-oping.
+   */
+  availability?: ReadonlyArray<SlashCommandSurface>;
+  /** Optional long-form help text used by `formatHelp(_, name)`. Falls back to `description`. */
+  helpDetails?: string;
 }
 
 export interface PromptSubmission {
@@ -17,21 +40,29 @@ export const BUILTIN_COMMANDS: SlashCommand[] = [
     name: "clear",
     description: "Clear the current conversation history",
     type: "builtin",
+    effect: "local",
+    availability: ["cli", "web"],
   },
   {
     name: "exit",
     description: "Exit the TUI session",
     type: "builtin",
+    effect: "local",
+    availability: ["cli"],
   },
   {
     name: "help",
     description: "List available slash commands, or show details for one (`/help <name>`)",
     type: "builtin",
+    effect: "local",
+    availability: ["cli", "web"],
   },
   {
     name: "quit",
     description: "Exit the TUI session",
     type: "builtin",
+    effect: "local",
+    availability: ["cli"],
   },
 ];
 
@@ -40,6 +71,27 @@ export interface BuiltinInvocation {
   name: SlashCommand["name"];
   args: string;
 }
+
+/**
+ * Builtin command names. Constrained as a string literal union for downstream
+ * exhaustive switches (e.g. dispatcher).
+ */
+export type BuiltinCommandName = "clear" | "exit" | "help" | "quit";
+
+/**
+ * Result of parsing a single line of textarea / TUI input into a slash-command intent.
+ *
+ * - `not-slash`: the input is a regular user message (no leading `/`). Callers should
+ *   forward to the model.
+ * - `builtin` / `skill`: the input matched a registered command.
+ * - `unknown`: the input *looks* like `/xxx` but no registered command matched. Callers
+ *   should typically warn the user before sending the literal text to the model.
+ */
+export type SlashParseResult =
+  | { kind: "not-slash" }
+  | { kind: "builtin"; name: BuiltinCommandName; args: string }
+  | { kind: "skill"; name: string; args: string }
+  | { kind: "unknown"; raw: string; args: string };
 
 export async function loadAvailableCommands(skillsDirs?: string[]): Promise<SlashCommand[]> {
   const skills = await listSkills(skillsDirs);
@@ -97,6 +149,48 @@ export function resolveBuiltinCommand(text: string): BuiltinInvocation | null {
 }
 
 /**
+ * Unified parser for slash input. Strict about the leading `/`: only inputs that
+ * start with `/` can become `builtin` / `skill` / `unknown`. Bare words like
+ * `clear` are treated as `not-slash` so they are never silently rerouted.
+ *
+ * Pass the merged commands list (builtin + skills) to enable `skill` resolution;
+ * omit it to only resolve builtins (everything else becomes `unknown` if it has
+ * a leading `/`).
+ */
+export function parseSlashInput(text: string, commands?: ReadonlyArray<SlashCommand>): SlashParseResult {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("/")) return { kind: "not-slash" };
+
+  const match = trimmed.match(/^\/([^\s]+)(?:\s+([\s\S]*))?$/);
+  if (!match) return { kind: "not-slash" };
+  const token = match[1];
+  if (!token) return { kind: "not-slash" };
+
+  const normalized = normalizeCommandName(token);
+  const args = (match[2] ?? "").trim();
+
+  const builtin = BUILTIN_COMMANDS.find((command) => command.name === normalized);
+  if (builtin) {
+    return { kind: "builtin", name: builtin.name as BuiltinCommandName, args };
+  }
+
+  const skill = commands?.find(
+    (command) => command.type === "skill" && command.name.toLowerCase() === normalized,
+  );
+  if (skill) {
+    return { kind: "skill", name: skill.name, args };
+  }
+
+  return { kind: "unknown", raw: normalized, args };
+}
+
+/** Returns true when the command may run on the requested surface. Missing availability defaults to "all surfaces". */
+export function isCommandAvailableOn(command: SlashCommand, surface: SlashCommandSurface): boolean {
+  if (!command.availability) return true;
+  return command.availability.includes(surface);
+}
+
+/**
  * Renders a help string for slash commands. With no `target`, lists all
  * commands grouped by type. With a `target`, prints the matched command's
  * details, or an error message if not found.
@@ -109,7 +203,8 @@ export function formatHelp(commands: SlashCommand[], target?: string): string {
       return `Unknown command: \`/${target}\`. Run \`/help\` to see available commands.`;
     }
     const kind = match.type === "builtin" ? "Built-in command" : "Skill";
-    return `**/${match.name}** — _${kind}_\n\n${match.description}`;
+    const body = match.helpDetails ?? match.description;
+    return `**/${match.name}** — _${kind}_\n\n${body}`;
   }
 
   const builtins = commands.filter((c) => c.type === "builtin");
@@ -132,7 +227,11 @@ export function formatHelp(commands: SlashCommand[], target?: string): string {
     }
   }
 
-  lines.push("", "Run `/help <name>` for details on a single command.");
+  lines.push(
+    "",
+    "Run `/help <name>` for details on a single command.",
+    "Skills are loaded on session start, page refresh, or via the Skills > Reload button.",
+  );
   return lines.join("\n");
 }
 
@@ -167,6 +266,7 @@ function toSkillCommand(skill: SkillFrontmatter): SlashCommand {
     name: skill.name,
     description: skill.description,
     type: "skill",
+    effect: "prompted",
   };
 }
 

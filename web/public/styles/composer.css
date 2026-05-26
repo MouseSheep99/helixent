@@ -9,6 +9,7 @@
   background: rgba(8, 18, 28, 0.9);
   box-shadow: 0 0 0 1px rgba(79, 163, 255, 0.08) inset, var(--shadow-md);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
 }
 
 .composer.dragging {
@@ -125,4 +126,171 @@
 
 .question-option span {
   line-height: 1.5;
+}
+
+/* Slash command suggestion popover */
+.slash-popover-host {
+  grid-column: 1 / -1;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 14px;
+  right: 14px;
+  z-index: 40;
+  pointer-events: auto;
+}
+
+.slash-popover-host[hidden] {
+  display: none;
+}
+
+.slash-popover,
+.slash-popover-empty {
+  background: rgba(10, 20, 32, 0.98);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 6px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.slash-popover-section + .slash-popover-section {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.slash-popover-section-title {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary, #6e8398);
+  padding: 4px 14px 6px;
+}
+
+.slash-popover-item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.slash-popover-item.active,
+.slash-popover-item:hover {
+  background: rgba(79, 163, 255, 0.14);
+}
+
+.slash-popover-name {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.slash-popover-name mark {
+  background: transparent;
+  color: var(--accent, #4fa3ff);
+  font-weight: 600;
+}
+
+.slash-popover-effect {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.slash-popover-effect-local {
+  background: rgba(140, 148, 160, 0.16);
+  color: #aab4c2;
+}
+
+.slash-popover-effect-prompted {
+  background: rgba(79, 163, 255, 0.16);
+  color: #6db4ff;
+}
+
+.slash-popover-desc {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slash-popover-empty-text {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-tertiary, #6e8398);
+}
+
+/* Composer command chip hint row */
+.composer-chip-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.composer-chip-row[hidden] {
+  display: none;
+}
+
+.composer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.composer-chip-name {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--text-primary);
+}
+
+.composer-chip-effect {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.composer-chip-effect-local {
+  background: rgba(140, 148, 160, 0.16);
+  color: #aab4c2;
+}
+
+.composer-chip-effect-prompted {
+  background: rgba(79, 163, 255, 0.16);
+  color: #6db4ff;
+}
+
+.composer-chip-effect-unknown {
+  background: rgba(255, 168, 87, 0.18);
+  color: #f8b06a;
+}
+
+.composer-chip-remove {
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.composer-chip-remove:hover {
+  color: var(--text-primary);
 }

@@ -17,14 +17,15 @@ import {
 } from "@/cli/config";
 import { MODEL_PROVIDERS } from "@/cli/model-providers";
 import { SettingsLoader, SettingsWriter } from "@/cli/settings";
-import { buildPromptSubmission, formatHelp, loadAvailableCommands, resolveBuiltinCommand } from "@/cli/tui/command-registry";
+import { buildPromptSubmission, loadAvailableCommands, parseSlashInput } from "@/cli/tui/command-registry";
+import { dispatch as dispatchSlash } from "@/cli/tui/slash-dispatcher";
 import { buildTodoViewState } from "@/cli/tui/todo-view";
 import { createCodingAgent, type ApprovalDecision, ApprovalManager, AskUserQuestionManager } from "@/coding";
 import { AnthropicModelProvider } from "@/community/anthropic";
 import { OpenAIModelProvider } from "@/community/openai";
 import type { Agent, AgentEvent } from "@/agent";
 import type { AskUserQuestionParameters, AskUserQuestionResult } from "@/coding";
-import type { ModelProvider, NonSystemMessage, Tool, ToolUseContent, UserMessage } from "@/foundation";
+import type { ModelProvider, Tool, ToolUseContent, UserMessage } from "@/foundation";
 import { Model } from "@/foundation";
 
 import {
@@ -160,9 +161,11 @@ async function route(req: Request): Promise<Response> {
     const session = getSession(sessionMatch[1]!);
     const action = sessionMatch[2] ?? "";
     if (!action && req.method === "GET") {
+      await refreshSingleSession(session);
       return json(snapshotSession(session));
     }
     if (action === "events" && req.method === "GET") {
+      await refreshSingleSession(session);
       return eventStream(session, req.signal);
     }
     if (action === "prompt" && req.method === "GET") {
@@ -271,6 +274,26 @@ async function route(req: Request): Promise<Response> {
 
   if (path === "/api/skills" && req.method === "GET") {
     return json({ skills: await listProjectSkills(ROOT), directory: getProjectSkillsDir(ROOT) });
+  }
+  if (path === "/api/skills/refresh" && req.method === "POST") {
+    const body = await readJson<{ sessionId?: string }>(req).catch(() => ({}) as { sessionId?: string });
+    if (body.sessionId) {
+      const session = getSession(body.sessionId);
+      await refreshSingleSession(session);
+      emit(session, { type: "commands", commands: session.commands });
+      return json({
+        commands: session.commands,
+        skills: session.skills,
+        refreshedAt: new Date().toISOString(),
+      });
+    }
+    await refreshSessionCommands();
+    const first = sessions.values().next().value as WebSession | undefined;
+    return json({
+      commands: first?.commands ?? [],
+      skills: first?.skills ?? [],
+      refreshedAt: new Date().toISOString(),
+    });
   }
   if (path === "/api/skills" && req.method === "POST") {
     const body = await readJson<SaveSkillBody>(req);
@@ -400,27 +423,69 @@ async function submitMessage(session: WebSession, body: SubmitMessageBody) {
     throw new HttpError("Agent is already running.", 409);
   }
 
-  const invocation = text ? resolveBuiltinCommand(text) : null;
-  if (invocation?.name === "clear") {
-    session.agent.clearMessages();
-    emit(session, { type: "trace", event: trace(session, "session_cleared", "Session messages cleared") });
-    emit(session, { type: "todo_update", todos: undefined });
+  const parseResult = text ? parseSlashInput(text, session.commands) : { kind: "not-slash" as const };
+  const dispatchResult = dispatchSlash(parseResult, "web", session.commands);
+  if (dispatchResult.kind === "state-mutation") {
+    emit(session, { type: "message", message: dispatchResult.userMessage });
+    for (const mutation of dispatchResult.mutations) {
+      switch (mutation.kind) {
+        case "clear-agent-messages":
+          session.agent.clearMessages();
+          session.currentRequestId = undefined;
+          emit(session, { type: "trace", event: trace(session, "session_cleared", "Session messages cleared") });
+          break;
+        case "clear-todos":
+          emit(session, { type: "todo_update", todos: undefined });
+          break;
+        case "clear-trace":
+          // No server-side trace store to clear; the front-end resets its in-memory trace.
+          break;
+        case "exit-process":
+          // Web surface should never receive exit-process — `dispatch` returns
+          // `unsupported` for /exit and /quit when context === "web".
+          break;
+      }
+    }
+    emit(session, { type: "command_executed", name: dispatchResult.name, effect: "local" });
     return;
   }
-  if (invocation?.name === "help") {
-    const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
-    const assistantMessage: NonSystemMessage = {
-      role: "assistant",
-      content: [{ type: "text", text: formatHelp(session.commands, invocation.args || undefined) }],
-    };
-    emit(session, { type: "message", message: userMessage });
-    emit(session, { type: "message", message: assistantMessage });
+  if (dispatchResult.kind === "render-message") {
+    emit(session, { type: "message", message: dispatchResult.userMessage });
+    emit(session, { type: "message", message: dispatchResult.assistantMessage });
+    // 合成消息没有真正的 model 调用，但前端依赖 model_output_block trace 才能在
+    // Agent Output 图里渲染（assistant message 会被 __skipModelOutput 屏蔽）。
+    // 这里手动补一条，确保 /help 等命令的回复在 Web 上可见。
+    const blocks = Array.isArray(dispatchResult.assistantMessage.content)
+      ? dispatchResult.assistantMessage.content
+      : [];
+    for (const [blockIndex, block] of blocks.entries()) {
+      emit(session, {
+        type: "trace",
+        event: trace(session, "model_output_block", `Synthetic output: ${block.type}`, {
+          blockIndex,
+          block,
+          synthetic: true,
+        }),
+      });
+    }
+    emit(session, { type: "command_executed", name: dispatchResult.name, effect: "local" });
     return;
   }
-  if (invocation?.name === "exit" || invocation?.name === "quit") {
-    emit(session, { type: "error", message: "Exit is only available in the terminal UI." });
+  if (dispatchResult.kind === "unsupported") {
+    emit(session, {
+      type: "command_executed",
+      name: dispatchResult.name,
+      reason: dispatchResult.reason,
+      effect: "local",
+    });
     return;
   }
+  if (dispatchResult.kind === "unknown-command") {
+    // Unknown /xxx commands fall through to the regular plain-message flow so
+    // the model still receives the literal text. The front-end is responsible
+    // for the lightweight "unknown command" toast (see parseSlashInputClient).
+  }
+  // skill-passthrough and noop fall through to the normal user-message flow below.
 
   const requestId = crypto.randomUUID();
   session.currentRequestId = requestId;
@@ -779,10 +844,15 @@ function eventStream(session: WebSession, signal: AbortSignal) {
   });
 }
 
+async function refreshSingleSession(session: WebSession) {
+  const dirs = getSkillsDirs(session.cwd);
+  session.commands = await loadAvailableCommands(dirs);
+  session.skills = await listSkills(dirs);
+}
+
 async function refreshSessionCommands() {
   for (const session of sessions.values()) {
-    session.commands = await loadAvailableCommands(getSkillsDirs(session.cwd));
-    session.skills = await listSkills(getSkillsDirs(session.cwd));
+    await refreshSingleSession(session);
     emit(session, { type: "commands", commands: session.commands });
   }
 }

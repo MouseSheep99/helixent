@@ -3,7 +3,7 @@ import type { AskUserQuestionParameters, AskUserQuestionResult } from "@/coding"
 import type { ApprovalDecision } from "@/coding/permissions";
 import type { AssistantMessage, Message, NonSystemMessage, ToolUseContent } from "@/foundation";
 
-import type { SlashCommand } from "../src/cli/tui/command-registry";
+import type { BuiltinCommandName, SlashCommand } from "../src/cli/tui/command-registry";
 
 export type TraceKind =
   | "input_context"
@@ -55,6 +55,11 @@ export type ServerEvent =
   | { type: "question"; request: WebQuestionRequest | null }
   | { type: "todo_update"; todos?: WebTodoItem[] }
   | { type: "commands"; commands: SlashCommand[] }
+  | { type: "command_executed";
+      name: BuiltinCommandName;
+      effect?: "local" | "prompted" | "unknown";
+      reason?: "cli-only";
+      detail?: string }
   | { type: "error"; message: string };
 
 export interface WebApprovalRequest {

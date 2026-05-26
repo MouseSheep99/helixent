@@ -59,7 +59,10 @@
           <section class="panel sidebar-panel">
             <div class="panel-heading" data-sidebar-panel-toggle>
               <span class="panel-heading-label"><span class="panel-chevron" aria-hidden="true"></span><span>Skills</span></span>
-              <button id="newSkill" class="ghost-button">New</button>
+              <span class="panel-heading-actions">
+                <button id="reloadSkills" class="ghost-button" title="Reload skills from disk">Reload</button>
+                <button id="newSkill" class="ghost-button">New</button>
+              </span>
             </div>
             <div class="panel-body">
               <div id="skillList" class="list compact"></div>
@@ -119,8 +122,14 @@
 
           <form id="composer" class="composer">
             <div id="appNotices" class="app-notices" aria-live="polite"></div>
+            <div id="composerCommandChip" class="composer-chip-row" hidden></div>
             <div id="composerAttachments" class="composer-attachments" hidden></div>
-            <textarea id="promptInput" list="commandPicker" rows="3" placeholder="Type your message or use / for commands..."></textarea>
+            <div id="slashSuggestionPopover" class="slash-popover-host" hidden></div>
+            <textarea id="promptInput" list="commandPicker" rows="3"
+                      placeholder="Type your message or use / for commands..."
+                      aria-controls="slashSuggestionPopover"
+                      aria-autocomplete="list"
+                      aria-expanded="false"></textarea>
             <datalist id="commandPicker"></datalist>
             <input id="composerImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
             <label class="secondary-button composer-image-button" for="composerImageInput" title="Attach images">+ Image</label>
@@ -153,6 +162,9 @@
                 <option value="model">Model</option>
                 <option value="tools">Tools</option>
                 <option value="human">Human</option>
+                <option value="slash">Slash</option>
+                <option value="slash:local">Slash · Local</option>
+                <option value="slash:prompted">Slash · Prompted</option>
                 <option value="session">Session</option>
               </select>
               <div class="timeline-tabs">
@@ -161,6 +173,8 @@
                 <button class="filter-pill" type="button" data-timeline-filter="model">Model</button>
                 <button class="filter-pill" type="button" data-timeline-filter="tools">Tools</button>
                 <button class="filter-pill" type="button" data-timeline-filter="human">Human</button>
+                <button class="filter-pill" type="button" data-timeline-filter="slash:local">Slash · Local</button>
+                <button class="filter-pill" type="button" data-timeline-filter="slash:prompted">Slash · Prompted</button>
               </div>
             </div>
             <div class="timeline-export-row">

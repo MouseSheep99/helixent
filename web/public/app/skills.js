@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { state, els } from "./state.js";
 import * as View from "../view.js";
-import { api } from "./api.js";
+import { api, flashStatus, showError } from "./api.js";
 import { insertCommand } from "./commands.js";
 import { renderCommands } from "./commands.js";
 
@@ -9,6 +9,28 @@ export async function loadSkills() {
   const result = await api("/api/skills");
   state.skills = result.skills || [];
   renderSkills();
+}
+
+export async function reloadSkills() {
+  try {
+    const sessionId = state.session?.sessionId;
+    const body = sessionId ? { sessionId } : {};
+    const result = await api("/api/skills/refresh", { method: "POST", body });
+    if (Array.isArray(result.commands)) {
+      state.commands = result.commands;
+      renderCommands();
+    }
+    if (Array.isArray(result.skills)) {
+      state.skills = result.skills;
+      renderSkills();
+    } else {
+      await loadSkills();
+    }
+    const count = Array.isArray(result.skills) ? result.skills.length : state.skills.length;
+    flashStatus(`Reloaded ${count} skill${count === 1 ? "" : "s"}.`);
+  } catch (error) {
+    showError(error);
+  }
 }
 
 export function renderSkills() {

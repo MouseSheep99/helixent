@@ -147,6 +147,16 @@
   background: rgba(122, 200, 255, 0.1);
 }
 
+.timeline-type-chip.slash {
+  border-color: rgba(148, 163, 184, 0.4);
+  color: rgb(203, 213, 225);
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.timeline-event-node.slash > .timeline-node-row {
+  background: rgba(148, 163, 184, 0.06);
+}
+
 .timeline-event-node.user > .timeline-node-row {
   background: rgba(122, 200, 255, 0.04);
 }

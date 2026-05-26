@@ -8,7 +8,7 @@ import { renderTools, applyEnabledTools } from "./tools.js";
 import { renderCommands, setTimelineFilter } from "./commands.js";
 import { loadConfig, saveConfig, openConfigDialog } from "./config.js";
 import { loadTraces, renderTraces } from "./traces.js";
-import { loadSkills, openSkillEditor, saveSkill, deleteSkill } from "./skills.js";
+import { loadSkills, openSkillEditor, saveSkill, deleteSkill, reloadSkills } from "./skills.js";
 import { copyTraceExport, downloadTraceExport } from "./trace-export.js";
 import { copyTimelineExport, downloadTimelineExport } from "./timeline-export.js";
 import { SESSION_STORAGE_KEY } from "./state.js";
@@ -61,6 +61,7 @@ export function bindEvents() {
   els.applyTools.addEventListener("click", applyEnabledTools);
   els.clearSession.addEventListener("click", clearSession);
   els.newSkill.addEventListener("click", () => openSkillEditor());
+  if (els.reloadSkills) els.reloadSkills.addEventListener("click", () => reloadSkills());
   els.composer.addEventListener("submit", submitPrompt);
   els.abortRun.addEventListener("click", abortRun);
   els.copyTrace.addEventListener("click", copyTraceExport);
@@ -303,7 +304,7 @@ export function connectEvents(sessionId) {
   const source = new EventSource(`/api/sessions/${sessionId}/events`);
   state.source = source;
   source.addEventListener("open", () => renderRunState());
-  for (const type of ["ready", "agent", "streaming_state", "message", "trace", "hook", "approval", "question", "todo_update", "commands", "error"]) {
+  for (const type of ["ready", "agent", "streaming_state", "message", "trace", "hook", "approval", "question", "todo_update", "commands", "command_executed", "error"]) {
     source.addEventListener(type, (event) => {
       if (!event.data) return;
       handleServerEvent(JSON.parse(event.data));
@@ -372,6 +373,42 @@ export function handleServerEvent(event) {
     renderCommands();
     return;
   }
+  if (event.type === "command_executed") {
+    if (event.name === "clear") {
+      resetSessionUiState();
+      flashStatus("Session cleared.");
+      return;
+    }
+    if (event.name === "help") {
+      flashStatus("Showing help.");
+    } else if (event.reason === "cli-only") {
+      flashStatus(`/${event.name} is only available in the terminal UI.`);
+    }
+    const at = new Date().toISOString();
+    appendTraceRow({
+      type: "command_executed",
+      name: event.name,
+      effect: event.effect ?? null,
+      reason: event.reason ?? null,
+      detail: event.detail ?? null,
+      at,
+    });
+    state.events.push({
+      id: `cmd:${at}:${event.name}`,
+      kind: "command_executed",
+      at,
+      label: `/${event.name}`,
+      data: {
+        name: event.name,
+        effect: event.effect ?? null,
+        reason: event.reason ?? null,
+        detail: event.detail ?? null,
+      },
+    });
+    renderOutput();
+    renderTimeline();
+    return;
+  }
   if (event.type === "error") {
     showError(event.message, { showInOutput: true });
   }
@@ -393,6 +430,11 @@ export async function submitPrompt(event) {
   const text = els.promptInput.value.trim();
   const images = state.pendingImages.slice();
   if (!text && images.length === 0) return;
+  const slash = parseSlashInputClient(text, state.commands);
+  if (slash.kind === "unknown") {
+    flashStatus(`Unknown command: /${slash.name}`);
+    return;
+  }
   await flushPromptDraftFromEditor();
   els.promptInput.value = "";
   state.pendingImages = [];
@@ -404,6 +446,20 @@ export async function submitPrompt(event) {
   });
 }
 
+export function parseSlashInputClient(text, commands) {
+  const trimmed = (text ?? "").trim();
+  if (!trimmed.startsWith("/")) return { kind: "not-slash" };
+  const body = trimmed.slice(1);
+  const spaceIdx = body.indexOf(" ");
+  const name = (spaceIdx === -1 ? body : body.slice(0, spaceIdx)).toLowerCase();
+  const args = spaceIdx === -1 ? "" : body.slice(spaceIdx + 1).trim();
+  if (!name) return { kind: "not-slash" };
+  const match = (commands || []).find((c) => c.name?.toLowerCase() === name);
+  if (!match) return { kind: "unknown", name, args };
+  if (match.type === "skill") return { kind: "skill", name: match.name, args };
+  return { kind: "builtin", name: match.name, args };
+}
+
 export async function abortRun() {
   if (!state.session) return;
   await api(`/api/sessions/${state.session.sessionId}/abort`, { method: "POST", body: {} });
@@ -412,6 +468,10 @@ export async function abortRun() {
 export async function clearSession() {
   if (!state.session) return;
   await api(`/api/sessions/${state.session.sessionId}/clear`, { method: "POST", body: {} });
+  resetSessionUiState();
+}
+
+export function resetSessionUiState() {
   state.messages = [];
   state.events = [];
   state.traceRows = [];
@@ -432,6 +492,10 @@ export function appendTraceRow(row) {
 
 export function outputMessageForTraceRow(message) {
   if (message?.role !== "assistant") return message;
+  // Synthetic assistant messages (e.g. /help reply) are produced by the server
+  // dispatcher rather than the model, so they have no paired model_output_block
+  // trace. Render them as-is to avoid disappearing under __skipModelOutput.
+  if (message.__synthetic) return message;
   const hasRenderableModelBlock = (message.content || []).some((block) => ["thinking", "text", "tool_use"].includes(block?.type));
   return hasRenderableModelBlock ? { ...message, __skipModelOutput: true } : message;
 }
