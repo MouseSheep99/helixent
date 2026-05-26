@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 
 import { type AgentMiddleware } from "@/agent";
 import { listSkills } from "@/agent/skills/list-skills";
@@ -277,13 +277,14 @@ async function route(req: Request): Promise<Response> {
   }
   if (path === "/api/skills/refresh" && req.method === "POST") {
     const body = await readJson<{ sessionId?: string }>(req).catch(() => ({}) as { sessionId?: string });
+    const projectSkills = await listProjectSkills(ROOT);
     if (body.sessionId) {
       const session = getSession(body.sessionId);
       await refreshSingleSession(session);
       emit(session, { type: "commands", commands: session.commands });
       return json({
         commands: session.commands,
-        skills: session.skills,
+        skills: projectSkills,
         refreshedAt: new Date().toISOString(),
       });
     }
@@ -291,7 +292,7 @@ async function route(req: Request): Promise<Response> {
     const first = sessions.values().next().value as WebSession | undefined;
     return json({
       commands: first?.commands ?? [],
-      skills: first?.skills ?? [],
+      skills: projectSkills,
       refreshedAt: new Date().toISOString(),
     });
   }
@@ -990,7 +991,9 @@ async function fileResponse(fileName: string, type: string) {
 async function assetResponse(fileName: string, type: string) {
   const publicDir = join(import.meta.dir, "public");
   const target = resolve(publicDir, fileName);
-  if (!target.startsWith(publicDir + "/") && target !== publicDir) {
+  // 跨平台路径围栏：拒绝 ".." 越狱（Windows 用 \，POSIX 用 /，所以不能写死分隔符）
+  const rel = relative(publicDir, target);
+  if (rel.startsWith("..") || rel === "..") {
     return json({ error: "Not found" }, 404);
   }
   const file = Bun.file(target);

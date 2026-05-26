@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -6,6 +6,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import { listSkills } from "@/agent/skills/list-skills";
 import { loadAvailableCommands } from "@/cli/tui/command-registry";
+import { listProjectSkills } from "../skills";
 
 let tempDir: string | undefined;
 
@@ -111,5 +112,60 @@ describe("skills hot-reload (refreshSingleSession behavior)", () => {
 
     const help = commands.find((cmd) => cmd.name === "help");
     expect(help?.effect).toBe("local");
+  });
+
+  test("listProjectSkills returns full SkillRecord (slug + content) for editor", async () => {
+    const root = await tempSkillsRoot();
+    await mkdir(join(root, "skills"), { recursive: true });
+    await writeSkill(join(root, "skills"), "handoff", "Handoff skill");
+
+    const records = await listProjectSkills(root);
+    const handoff = records.find((s) => s.slug === "handoff");
+    expect(handoff).toBeDefined();
+    expect(handoff?.name).toBe("handoff");
+    expect(handoff?.content).toContain("name: handoff");
+    expect(handoff?.content).toContain("# handoff");
+    expect(typeof handoff?.path).toBe("string");
+  });
+
+  test("listProjectSkills picks up newly added skills (Reload contract)", async () => {
+    const root = await tempSkillsRoot();
+    await mkdir(join(root, "skills"), { recursive: true });
+    await writeSkill(join(root, "skills"), "alpha", "First");
+
+    const before = await listProjectSkills(root);
+    expect(before.map((s) => s.slug)).toEqual(["alpha"]);
+    expect(before[0]?.content).toBeTruthy();
+
+    await writeSkill(join(root, "skills"), "beta", "Second");
+
+    const after = await listProjectSkills(root);
+    expect(after.map((s) => s.slug).sort()).toEqual(["alpha", "beta"]);
+    for (const skill of after) {
+      expect(skill.content).toBeTruthy();
+      expect(skill.slug).toBeTruthy();
+    }
+  });
+
+  test("listProjectSkills follows symlinked skill directories", async () => {
+    const root = await tempSkillsRoot();
+    const projectSkills = join(root, "skills");
+    const externalSkills = join(root, ".agents", "skills");
+    await mkdir(projectSkills, { recursive: true });
+    await mkdir(externalSkills, { recursive: true });
+
+    // 真实目录
+    await writeSkill(projectSkills, "coding-plan", "Plan coding work");
+    // symlink → 外部目录的 skill（模拟 skills/handoff -> ../.agents/skills/handoff）
+    await writeSkill(externalSkills, "handoff", "Handoff session");
+    await symlink(join(externalSkills, "handoff"), join(projectSkills, "handoff"));
+
+    const records = await listProjectSkills(root);
+    const slugs = records.map((s) => s.slug).sort();
+    expect(slugs).toEqual(["coding-plan", "handoff"]);
+
+    const handoff = records.find((s) => s.slug === "handoff");
+    expect(handoff?.name).toBe("handoff");
+    expect(handoff?.content).toContain("# handoff");
   });
 });

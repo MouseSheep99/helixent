@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import matter from "gray-matter";
@@ -16,7 +16,17 @@ export async function listProjectSkills(cwd = process.cwd()): Promise<SkillRecor
   const skills: SkillRecord[] = [];
 
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    // 接受真实目录或指向目录的符号链接
+    let isDir = entry.isDirectory();
+    if (!isDir && entry.isSymbolicLink()) {
+      try {
+        const target = await stat(join(skillsDir, entry.name));
+        isDir = target.isDirectory();
+      } catch {
+        continue;
+      }
+    }
+    if (!isDir) continue;
     const skillFile = join(skillsDir, entry.name, "SKILL.md");
     try {
       const content = await readFile(skillFile, "utf8");

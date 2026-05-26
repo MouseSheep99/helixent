@@ -20,13 +20,9 @@ export async function reloadSkills() {
       state.commands = result.commands;
       renderCommands();
     }
-    if (Array.isArray(result.skills)) {
-      state.skills = result.skills;
-      renderSkills();
-    } else {
-      await loadSkills();
-    }
-    const count = Array.isArray(result.skills) ? result.skills.length : state.skills.length;
+    state.skills = Array.isArray(result.skills) ? result.skills : [];
+    renderSkills();
+    const count = state.skills.length;
     flashStatus(`Reloaded ${count} skill${count === 1 ? "" : "s"}.`);
   } catch (error) {
     showError(error);
